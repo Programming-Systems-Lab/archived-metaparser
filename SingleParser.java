@@ -36,7 +36,6 @@ import org.jdom.ProcessingInstruction;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
 
-import psl.groupspace.impl.DTDFragment;
 import psl.oracle.impl.SchemaFragment;
 
 /**
