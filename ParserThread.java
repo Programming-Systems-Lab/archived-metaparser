@@ -24,7 +24,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.11  2001-04-18 20:12:29  png3
+  * Revision 2.12  2001-06-02 19:35:33  png3
+  * various pre-demo tweaks
+  *
+  * Revision 2.11  2001/04/18 20:12:29  png3
   * synchronization III: insertion of null object unnecessary and removed
   *
   * Revision 2.10  2001/04/18 19:55:18  png3
@@ -71,7 +74,8 @@ class ParserThread extends DefaultHandler
   boolean debug = false;
   int depth = 0;
 
-  WVM wvm = null;
+  // Demo temp
+  // WVM wvm = null;
   String moduleName = null;
 
   // for SmartEventSchema
@@ -166,13 +170,12 @@ class ParserThread extends DefaultHandler
       if (moduleName != null) {
 
 	prDbg(fn+"module "+moduleName+" should be coming");  // debug
-	/*
-	// fake!
+	// DemoTemp
 	prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
 	Thread.currentThread().sleep(1000);
 	prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
-	*/
 
+	/*
         synchronized (_wklArrivals) {
 	  if (_wklArrivals.containsKey(requestID)) {
 	    prDbg(fn+"worklet had already arrived:"+
@@ -190,6 +193,7 @@ class ParserThread extends DefaultHandler
 	    prDbg(fn+"worklet arrived:" + d);
 	  }
 	}
+	*/
 	
 	try {
 	// Let Simin work his magic
@@ -230,9 +234,13 @@ class ParserThread extends DefaultHandler
 
 	prDbg(fn+"Resulting Hashtable is: " + ht);
 	// TODO what's my number?
-	KXNotification edAlert = KXNotification.EDInputKXNotification(
-					"psl.metaparser.ParserThread", 0, ht);
-	slt.publish(edAlert);
+	// Demo Temp
+	AttributeValue av = (AttributeValue)ht.get("Status");
+	if ((av == null) || !(av.stringValue().equals("Running"))) {
+	  KXNotification edAlert = KXNotification.EDInputKXNotification(
+					  "psl.metaparser.ParserThread", 0, ht);
+	  slt.publish(edAlert);
+	}
 	
      }
 
@@ -244,8 +252,9 @@ class ParserThread extends DefaultHandler
       return;
     }
     prDbg(fn+"shutting down wvm");
-    // don't shutdown if fake
-    wvm.shutdown();
+    // don't shutdown if Demo temp
+    // wvm.shutdown();
+
     if (debug) dbg.println(fn+"Done parsing");
   }
 
@@ -293,12 +302,11 @@ class ParserThread extends DefaultHandler
       // retrieve subparser
       requestID = String.valueOf(System.currentTimeMillis());
 
-      prDbg(fn+"creating new WVM("+slt.hostname+","+requestID+")");
-      /*
-      // fake!
+      // Demo temp
+      // prDbg(fn+"creating new WVM("+slt.hostname+","+requestID+")");
       System.out.println("WVM created");
-      */
-      wvm = new WVM(this, slt.hostname, requestID);
+      // Demo temp
+      // wvm = new WVM(this, slt.hostname, requestID);
 
       Notification n = new Notification();
       n.putAttribute("Hostname", slt.hostname);
@@ -310,13 +318,12 @@ class ParserThread extends DefaultHandler
       n.putAttribute("MPQuery", MPUtil.makeQuery(qName));
       prDbg(fn+"sending request to Oracle:" + n);
       try {
-      /*
-	// fake!
+	// DemoTemp
 	prDbg(fn+"going to sleep: " + MPUtil.timestamp());
 	Thread.currentThread().sleep(1000);
 	prDbg(fn+"awake again: " + MPUtil.timestamp());
 	moduleName="tagprocessor.jar";
-      */
+      /*
 	slt.publish(n);
 	Object lockObj = new Object();
 	Metaparser.waitList.put(requestID, lockObj);
@@ -331,6 +338,7 @@ class ParserThread extends DefaultHandler
 	// XMLSchema subSchema = MPUtil.extractSchema(oracleResp);
 	MPUtil.extractSchema(oracleResp);
 	moduleName = MPUtil.extractModuleName(oracleResp);
+	*/
       
 	// we have a new schema.  parse it out, suck it in...
 	currentVal = new Validator(xml, new PipedWriter(),
@@ -339,7 +347,7 @@ class ParserThread extends DefaultHandler
 	// mega-hack -- defies description
 	// extracted XML is sitting in file schema.xsd
 	currentVal.send("<"+qName+
-		" xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'" +
+		" xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'" +
   		" xsi:noNamespaceSchemaLocation='schema.xsd'>");
       } catch (Exception e) {
 	prLog(fn+"Exception with Oracle communication: " + e);

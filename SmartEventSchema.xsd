@@ -44,7 +44,7 @@
 	      </element>
 
 	      <!-- UTC timestamp -->
-	      <element name="time" type="timeInstant"/>
+	      <element name="time" type="string"/>
 	      <!-- tells KX system not to attempt to parse/distill XML -->
 	      <element name="kxOpaque" type="boolean" minOccurs="0"/>
 	      <!-- optional identifying info, e.g. probe name -->

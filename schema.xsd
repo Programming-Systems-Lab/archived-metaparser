@@ -1,1 +1,96 @@
-<?xml version="1.0" encoding="UTF-8"?><schema>  <?FleXML type="schemaFrag" name="sendmail/biff" version="1.0"?>    <annotation>      <documentation>        Schema fragment for data from sendmail/biff probes.	Copyright 2000 Trustees of Columbia University	in the City of New York.  All rights reserved.      </documentation>    </annotation>   <element name="smtp">    <complexType>      <sequence>        <element name="to" type="string"/>        <element name="from" type="string"/>        <element name="subject" type="string"/>        <element name="sent" type="timeInstant"/>        <element name="received" type="timeInstant" minOccurs="0"/>      </sequence>    </complexType>  </element>  <?FleXML type="/schemaFrag"?></schema>
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+<schema 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:se="http://www.psl.cs.columbia.edu/2001/01/SE01"
+	elementFormDefault="qualified"> -->
+	
+<schema xmlns="http://www.w3.org/2001/XMLSchema">
+  <?FleXML type="schemaFrag" name="activeInterface" version="1.0"?>
+    <annotation>
+      <documentation>
+        Schema fragment for data from Active Interface.
+	Copyright 2001 Trustees of Columbia University
+	in the City of New York.  All rights reserved.
+      </documentation>
+    </annotation>
+ 
+  <element name="event">
+    <complexType>
+      <sequence>
+
+	<element name="packager">
+	  <complexType>
+	    <attribute name="value" type="string"/>
+	  </complexType>
+	</element>
+	<element name="timestamp">
+	  <complexType>
+	    <attribute name="value" type="string"/>
+	  </complexType>
+	</element>
+
+	<element name="parameters">
+	  <complexType>
+	    <sequence>
+
+	      <element name="callback">
+		<complexType>
+		  <attribute name="type" type="string"/>
+		</complexType>
+	      </element>
+	      <element name="object">
+		<complexType>
+		  <attribute name="value" type="string"/>
+		</complexType>
+	      </element>
+	      <element name="class">
+		<complexType>
+		  <attribute name="name" type="string"/>
+		</complexType>
+	      </element>
+	      <element name="method">
+		<complexType>
+		  <attribute name="name" type="string"/>
+		</complexType>
+	      </element>
+	      <element name="parameters">
+		<complexType>
+		  <sequence>
+
+		    <element name="param" minOccurs="0" maxOccurs="unbounded">
+		      <complexType>
+			<attribute name="type" type="string"/>
+			<attribute name="value" type="string"/>
+		      </complexType>
+		    </element>
+
+		    <element name="SERVICE_DYNAMICS">
+		      <complexType>
+			<sequence>
+
+			  <element name="Service" type="string"/> 
+			  <element name="State" type="string" minOccurs="0"/> 
+			  <element name="Exception_msg" type="string" minOccurs="0"/> 
+			  <element name="Status_title" type="string" minOccurs="0"/> 
+			  <element name="Status_message" type="string" minOccurs="0"/> 
+			  <element name="Status" type="string" minOccurs="0"/> 
+			  <element name="Progress" type="string" minOccurs="0"/> 
+
+			</sequence>
+		      </complexType>
+		    </element>
+
+		  </sequence>
+		</complexType>
+	      </element>
+
+	    </sequence>
+	  </complexType>
+	</element>
+
+      </sequence>
+    </complexType>
+  </element>
+  <?FleXML type="/schemaFrag"?>
+</schema>

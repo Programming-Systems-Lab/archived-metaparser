@@ -6,7 +6,10 @@ import org.xml.sax.*;
 /** Input controller.  Selectively feeds data to a SubParser.
   *
   * $Log$
-  * Revision 2.4  2001-02-05 06:35:16  png3
+  * Revision 2.5  2001-06-02 19:35:33  png3
+  * various pre-demo tweaks
+  *
+  * Revision 2.4  2001/02/05 06:35:16  png3
   * Post California version
   *
   * Revision 2.3  2001/01/30 10:16:55  png3

@@ -10,7 +10,10 @@ import siena.*;
   * Spawns ParserThreads.
   *
   * $Log$
-  * Revision 2.5  2001-03-14 08:17:13  png3
+  * Revision 2.6  2001-06-02 19:35:33  png3
+  * various pre-demo tweaks
+  *
+  * Revision 2.5  2001/03/14 08:17:13  png3
   * various changes towards working demo
   *
   * Revision 2.4  2001/02/05 06:35:16  png3
@@ -49,7 +52,8 @@ class SienaListenerThread implements Runnable {
     this.sienaURL = sienaURL;
     this.log = log;
     this.dbg = dbg;
-    debug = (dbg == null);
+    debug = (dbg != null);
+    System.err.println("SLT started debug = " + debug);
 
     try {
       hostname = InetAddress.getLocalHost().getHostName();
@@ -57,6 +61,7 @@ class SienaListenerThread implements Runnable {
       log.println("slt_ctor: can't get local host name:" + uhe);
       return;
     }
+    prDbg("SLT starting up");
   }
 
   // TODO: not thread safe, but we're going to un-Thread this anyway...
@@ -102,10 +107,10 @@ class SienaListenerThread implements Runnable {
     // create filters
     // #1, stuff coming from ED
     Filter f1 = new Filter();
-    f1.addConstraint("Source", "EventDistiller");
+    // f1.addConstraint("Source", "EventDistiller");
     f1.addConstraint("Type", "DataToMetaparser");
     // debug
-    if (dbg != null) dbg.println("adding ED filter " + f1);
+    if (dbg != null) dbg.println("adding DataToMetaparser filter " + f1);
     try {
       synchronized (this) {
 	s.subscribe(f1, 
@@ -116,7 +121,7 @@ class SienaListenerThread implements Runnable {
 	);
       }
     } catch (SienaException se) {
-      log.println(fn + ": SienaException adding filter 1:");
+      log.println(fn + ": SienaException adding DataToMetaparserfilter:");
       log.println(se);
       return;
     }
@@ -188,7 +193,7 @@ class SienaListenerThread implements Runnable {
   // synchronized wrapper
   synchronized public void publish(Notification n) {
     final String fn = "SLT_publish: ";
-    if (dbg != null) { dbg.println("publishing " + n); } // debug
+    prDbg("publishing " + n); 
     try {
       s.publish(n);
     } catch (SienaException se) {

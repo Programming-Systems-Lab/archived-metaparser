@@ -10,7 +10,7 @@ import siena.SienaException;
  *  Creates a SienaListenerThread, and establishes a few
  *  thread intercommunication data structures.
  *  If SienaListener gets a query from the Event Distiller,
- *  it starts a new SEParserThread.  The SEParserThread
+ *  it starts a new ParserThread.  The ParserThread
  *  directs the data input of a subordinate Validator.
  *  This initial Validator validates against the smartevent
  *  schema.  When it encounters an unknown tag, the schema and
@@ -31,7 +31,10 @@ import siena.SienaException;
  *  FleXML PI.  Requires actual streaming validation.
  *
  *  $Log$
- *  Revision 2.5  2001-03-14 08:17:13  png3
+ *  Revision 2.6  2001-06-02 19:35:33  png3
+ *  various pre-demo tweaks
+ *
+ *  Revision 2.5  2001/03/14 08:17:13  png3
  *  various changes towards working demo
  *
  *  Revision 2.4  2001/02/05 06:35:16  png3
@@ -58,7 +61,7 @@ public class Metaparser {
   private static final String fn = "Metaparser";
   // should allow this from command line also...
   private static final String prop = "metaparser.properties";
-  static boolean debug = false;
+  static boolean debug = true;
   private static String seSchema = null;
   static PrintWriter log = null;   
   static PrintWriter dbg = null;   
