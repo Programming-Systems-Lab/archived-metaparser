@@ -23,7 +23,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.7  2001-03-14 08:17:13  png3
+  * Revision 2.8  2001-04-11 18:55:17  png3
+  * fixed bug with not storing object ref in _wklArrivals
+  *
+  * Revision 2.7  2001/03/14 08:17:13  png3
   * various changes towards working demo
   *
   * Revision 2.6  2001/03/12 08:07:39  png3
@@ -165,6 +168,7 @@ class ParserThread extends DefaultHandler
 	    	(Date)_wklArrivals.get(requestID));
 	  } else {
 	    Object lockObj = new Object();
+	    _wklArrivals.put(requestID, lockObj);
 	    synchronized (lockObj) {
 	      prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
 	      lockObj.wait();
