@@ -1,436 +1,103 @@
-import oracle.xml.parser.schema.*;
-import oracle.xml.parser.v2.*;
-import org.xml.sax.*;
-import org.xml.sax.helpers.*;
+import java.util.*;
 import java.io.*;
 import java.net.*;
-import java.util.*;
-import siena.*;
 
+import siena.SienaException;
 
-public class Metaparser extends DefaultHandler {
+/** Root Metaparser class.
+ *  Creates a SienaListenerThread, and establishes a few
+ *  thread intercommunication data structures.
+ *  If SienaListener gets a query from the Event Distiller,
+ *  it starts a new SEParserThread.  The SEParserThread
+ *  directs the data input of a subordinate Validator.
+ *  This initial Validator validates against the smartevent
+ *  schema.  When it encounters an unknown tag, the schema and
+ *  processor for the unknown tag are requested from the Oracle, 
+ *  and the thread  goes to sleep.  When the response comes in, the 
+ *  Validator wakes up and validates the unknown portion.  When 
+ *  finished, it checks to see if the worklet has arrived and 
+ *  installed the tag processor.  If not, it goes to sleep again, 
+ *  and waits for the arrival.  When it comes, it applies the tag 
+ *  processor based on type: XSLT templates are applied, and 
+ *  XMLFilters are hooked up to an XMLReader.
+ *
+ *  Maybe.
+ *
+ *  TODO: properties instead of hardcoding
+ *  TODO: caching of oracle responses.
+ *  TODO: reacting to unknown tag, instead of faking it based on
+ *  FleXML PI.  Requires actual streaming validation.
+ *
+ *  $Log$
+ *  Revision 2.2  2001-01-28 17:52:17  png3
+ *  New version of Metaparser: fully multithreaded.  PrintWriter logs.
+ *
+ *
+ */
 
-  Locator       locator;
-  int    depth = 0;
-  String spc   = "  ";
-
-  Siena s = null;
-
-  boolean spawnParser = false;
-  boolean fileMode = false;
-  String file = null;  // only used in fileMode;
-
-  Stack parserStack = null;
-  XReader currentXR = null;
-
-  /** smartevent schema */
-  XMLSchema se = null;
-  /** inner schema fragment.  Should come from Oracle. */
-  XMLSchema frag = null;
-  // URLs of the above schemas
-  URL seURL=null, fragURL=null;
-
-  String xml = null;  // the XML string we're parsing
+public class Metaparser {
   
-
-  private void printMsg(String m) {
-    for (int i = 0; i < depth; ++i) {
-      System.err.print(spc);
-    }
-    System.err.println(m);
-  }
-
-  private String printLoc() {
-    return (locator.getLineNumber() + ":" 
-    	+ locator.getColumnNumber());
-  }
-
-  public static String printLoc(Locator l) {
-    return (l.getLineNumber() + ":" 
-    	+ l.getColumnNumber());
-  }
-
-  /** Constructor */
-  public Metaparser() {
-
-    parserStack = new Stack();
-
-    // set up Siena
-    HierarchicalDispatcher hd = new HierarchicalDispatcher();
-    try {
-      hd.setReceiver(new TCPPacketReceiver(31337));
-    } catch (IOException ioe) {
-      printMsg("Unable to set hd receiver:" + ioe);
-      return;
-    }
-    s = hd;
-
-    Filter f1 = new Filter();
-    f1.addConstraint("Source", "EventDistiller");
-    f1.addConstraint("Type", "DataToMetaParser");
-    try {
-      s.subscribe(f1, 
-	new Notifiable() {
-	  public void notify(Notification n) {handleEDNotification(n);}
-	  public void notify(Notification[] s) {}
-	}
-      );
-    } catch (SienaException se) {
-      se.printStackTrace();
-    }
-
-    Filter f2 = new Filter();
-    f2.addConstraint("Source", "Oracle");
-    f2.addConstraint("Type", "DataToMetaParser");
-    try {
-      s.subscribe(f2, 
-	new Notifiable() {
-	  public void notify(Notification n) {handleOracleNotification(n);}
-	  public void notify(Notification[] s) {}
-	}
-      );
-    } catch (SienaException se) {
-      se.printStackTrace();
-    }
-  }
-
-  public void handleEDNotification(Notification n) {
-    System.err.println("got ED notification");
-    AttributeValue av = n.getAttribute("SmartEvent");
-    xml = av.stringValue();
-    parse();
-  }
-
-  public void handleOracleNotification(Notification n) {
-    System.err.println("got Oracle notification:" + n);
-  }
-
-
-  // note that isMain and isSub should be connected to the
-  // same underlying source.  isSub will be used to create
-  // multiple Readers.
-  public void parse() {
-   StringReader sr = new StringReader(xml);
-   parse(sr);
-  }
-
-  public void parse(Reader r) {
-    SAXParser p = new SAXParser();
-    
-    p.setValidationMode(XMLParser.NONVALIDATING);
-    p.setContentHandler(this);
-    p.setErrorHandler(this);
-
-    printMsg("starting to parse");
-    try {
-      currentXR = new XReader(r, new PipedWriter(),
-      	se, "Validator_1");
-      // initialize outermost depth
-      currentXR.setDepth(-1);
-      currentXR.setElement(null);
-
-      p.parse(new StringReader(xml));
-      currentXR.close(true);
-    } catch (XMLParseException xmlpe) {
-      printMsg("XMLParseException during parsing at " +
-	printLoc() + ":" + xmlpe.getMessage());
-      xmlpe.printStackTrace();
-      return;
-    } catch (SAXException se) {
-      printMsg("SAXException during parsing:" + se.getMessage());
-      se.printStackTrace();
-      return;
-
-    } catch (IOException ioe) {
-      printMsg("IOException during parsing:" + ioe.getMessage());
-      ioe.printStackTrace();
-      return;
-    }
-    printMsg("Done parsing");
-  }
-
-
-  /** actually test code to trace problem with reading strings */
-  public void parse(String f) {
-    fileMode = true;
-    file = f;
-    SAXParser p = new SAXParser();
-    
-    p.setValidationMode(XMLParser.NONVALIDATING);
-    p.setContentHandler(this);
-    p.setErrorHandler(this);
-
-    printMsg("starting to parse");
-    try {
-      currentXR = new XReader(new FileReader(file), new PipedWriter(),
-      	se, "Validator_1");
-      // initialize outermost depth
-      currentXR.setDepth(-1);
-      currentXR.setElement(null);
-
-      p.parse(new FileReader(file));
-      currentXR.close(true);
-    } catch (XMLParseException xmlpe) {
-      printMsg("XMLParseException during parsing at " +
-	printLoc() + ":" + xmlpe.getMessage());
-      xmlpe.printStackTrace();
-      return;
-    } catch (SAXException se) {
-      printMsg("SAXException during parsing:" + se.getMessage());
-      se.printStackTrace();
-      return;
-
-    } catch (IOException ioe) {
-      printMsg("IOException during parsing:" + ioe.getMessage());
-      ioe.printStackTrace();
-      return;
-    }
-    printMsg("Done parsing");
-  }
-
+  /** when Parsers need to wait for a response, they register
+    * themselves here (key=requestid, value=the object they're
+    * wait()ing on, and wait for a notify().
+    * Synchronized HashMap;
+    */
+  static Map waitList = null;
+  SienaListenerThread slt = null;
+  private static final String fn = "Metaparser";
+  // should allow this from command line also...
+  private static final String prop = "metaparser.properties";
+  static boolean debug = false;
+  private static String seSchema = null;
+  static PrintWriter log = null;   
+  static PrintWriter dbg = null;   
 
   public static void main(String args[]) {
 
-    boolean testFile = false;
-    XSDBuilder b;
-    BufferedReader br;
-
-    if (args.length < 2) {
-      System.err.println("Usage:");
-      System.err.println("\tMetaparser <schema-file-1> <schema-file-2> [<test-file>]");
-      return;
+    Properties p = new Properties();
+    try {
+      FileInputStream fis = new FileInputStream(prop);
+      p.load(fis);
+    } catch (IOException ioe) {
+      System.out.println(fn + ": Warning: can't open properties file " +
+      	prop + ". Using defaults.");
+      System.out.println(ioe);
     }
 
-    URL        seURL      = fileToURL(new File(args[0]));
-    URL        fragURL    = fileToURL(new File(args[1]));
-    if (args.length == 3) {
-      URL        xmlURL     = fileToURL(new File(args[2]));
-      testFile = true;
+    String sienaURL = p.getProperty("sienaURL", 
+    	"senp://canal.psl.cs.columbia.edu:4321");
+    debug = Boolean.valueOf(p.getProperty("debug","false")).booleanValue();
+    String logFile = p.getProperty("logFile", "Metaparser.log");
+    String dbgFile = null;
+    if (debug) {
+      dbgFile = p.getProperty("dbgFile", "Metaparser.dbg");
     }
-
-    Metaparser mt = new Metaparser();
-
+    seSchema = p.getProperty("seSchema", "SmartEventSchema.xsd");
 
     try {
-      b = new XSDBuilder();
-    } catch (XSDException xsde) {
-      mt.printMsg("Exception when creating XSDBuilder():" + xsde.getMessage());
-      xsde.printStackTrace();
-      return;
-    }
-
-    mt.printMsg("reading in smartevent schema " + args[0]);
-    try {
-      mt.se = (XMLSchema) b.build(seURL);
-    } catch (Exception e) {
-      mt.printMsg("Exception when building schema:" + e.getMessage());
-      e.printStackTrace();
-      return;
-    }
- 
-    mt.printMsg("reading in fragment schema " + args[1]);
-    try {
-      mt.frag = (XMLSchema) b.build(fragURL);
-    } catch (Exception e) {
-      mt.printMsg("Exception when building schema:" + e.getMessage());
-      e.printStackTrace();
-      return;
-    }
-
-    if (testFile) {
-      mt.printMsg("Reading test file " + args[2]);
-      StringBuffer sb = new StringBuffer();
-      String s = null;
-      try {
-	BufferedReader tf_br = new BufferedReader(new FileReader(args[2]));
-	do {
-	  s = tf_br.readLine();
-	  if (s != null) {
-	    sb.append(s);
-	    sb.append("\n");
-	  }
-	} while (s != null);
-      } catch (IOException ioe) {
-	mt.printMsg("Exception when reading " + args[2] + ":" + ioe);
-	return;
+      log = new PrintWriter(new FileWriter(logFile), true);
+      log.println("Log started " + MPUtil.timestamp());
+      if (debug) {
+	dbg = new PrintWriter(new FileWriter(dbgFile), true);
+	dbg.println("Debug Log started " + MPUtil.timestamp());
       }
-      mt.xml = sb.toString();
-      mt.printMsg("About to parse:\n" + mt.xml+"\n.");
-      mt.parse();
-
-      // mt.parse(args[2]);
-    }
-  }
- 
-  public void setDocumentLocator(Locator locator) {
-    printMsg("SetDocumentLocator:");
-    this.locator = locator;
-  }
-
-  public void startDocument() {
-    printMsg("StartDocument");
-  }
-
-  public void endDocument() throws SAXException {
-    printMsg("EndDocument");
-  }
-
-  public void startElement(
-          String namespaceURI, String localName, String qName, Attributes atts)
-            throws SAXException {
-
-    printMsg("StartElement (" + printLoc() + "):" + qName);
-    for (int i = 0; i < atts.getLength(); i++) {
-      String aname = atts.getQName(i);
-      String type  = atts.getType(i);
-      String value = atts.getValue(i);
-
-      printMsg("   " + aname + "(" + type + ")" + "=" + value);
-    }
-    try {
-      currentXR.flush(locator);
     } catch (IOException ioe) {
-      printMsg("Flush error:" + ioe);
-    }
-    if (spawnParser) {
-      // these should be pushed on to the stack also...
-      printMsg("*** Saving depth info of depth:" + depth
-        + ", targetElement:" + qName);
-      currentXR.setDepth(depth);
-      currentXR.setElement(qName);
-      spawnParser = false;
-    }
-    ++depth;
-  }
-
-  public void endElement(String namespaceURI, String localName, String qName) 
-  	throws SAXException {
-    --depth;
-    printMsg("EndElement:" + qName);
-    try {
-      currentXR.flush(locator);
-    } catch (IOException ioe) {
-      printMsg("Flush error:" + ioe);
-    }
-    if ((currentXR.getDepth() == depth) && (currentXR.getElement().equals(qName))) {
-      printMsg("*** Popping back to previous parser");
-      try {
-	currentXR.close(false);
-	currentXR = (XReader)parserStack.pop();
-	currentXR.skip(locator);
-      } catch (IOException ioe) {
-	printMsg("close error:" + ioe);
-      }
-    }
-  }
-
-  public void startPrefixMapping(String prefix, String uri) throws SAXException {
-    printMsg("startPrefixMapping: prefix:" + prefix);
-    printMsg("\turi:" + uri);
-  }
-
-  public void endPrefixMapping(String prefix) throws SAXException {
-    printMsg("EndPrefixMapping:" + prefix);
-  }
-
-  public void skippedEntity(String entity) throws SAXException {
-    printMsg("skippedEntity:" + entity);
-  }
-
-  public void characters(char[] cbuf, int start, int len) {
-    printMsg("Characters:" + new String(cbuf, start, len));
-    try {
-      currentXR.flush(locator);
-    } catch (IOException ioe) {
-      printMsg("Flush error:" + ioe);
-    }
-  }
-
-  public void ignorableWhitespace(char[] cbuf, int start, int len) {
-    printMsg("IgnorableWhiteSpace");
-  }
-
-  public void processingInstruction(String target, String data)
-          throws SAXException {
-    printMsg("ProcessingInstruction:" + target + " " + data);
-    if (target.toLowerCase().equals("flexml")) {
-      ++depth;
-      printMsg("Found FleXML tag!");
-      ++depth;
-      StringTokenizer st = new StringTokenizer(data);
-      while (st.hasMoreTokens()) {
-        String piAttr = st.nextToken();
-        StringTokenizer st2 = new StringTokenizer(piAttr, "=\" ");
-	if (st2.countTokens() != 2) {
-	  printMsg("Malformed PI Attribute: " + piAttr);
-	} else {
-	  String piaName = st2.nextToken();
-	  String piaVal = st2.nextToken();
-	  printMsg(piaName + " = " + piaVal);
-	  if (piaName.toLowerCase().equals("type")) {
-	    if (piaVal.toLowerCase().equals("schemafrag")) {
-	      ++depth;
-	      printMsg("*** found schemaFrag PI ***");
-	      // next element needs to be saved as "outermost"
-	      // element of subdocument
-	      printMsg("*** pushing currentXR");
-	      parserStack.push(currentXR);
-	      try {
-	        if (fileMode) {
-		  currentXR = new XReader(new FileReader(file),
-		    new PipedWriter(), frag, "Validator_2", locator);
-		} else {
-		  currentXR = new XReader(new StringReader(xml), 
-		    new PipedWriter(), frag, "Validator_2", locator);
-		}
-		currentXR.send("<?xml version='1.0' encoding='UTF-8'?>");
-	      } catch (IOException ioe) {
-	        printMsg("XReader creation error: " + ioe);
-	      }
-	      spawnParser = true;
-	      --depth;
-	    }
-	  }
-	}
-      }
-      depth -= 2;
+      System.err.println(fn + ": Can't open log/debug file:");
+      System.err.println(ioe);
+      // abort
+      return;
     }
 
-    try {
-      currentXR.flush(locator);
-    } catch (IOException ioe) {
-      printMsg("Flush error:" + ioe);
-    }
+    Metaparser mp = new Metaparser();
+    waitList = Collections.synchronizedMap(new HashMap());
+    // TODO: SienaListeners don't have to be threads...
+    mp.slt = new SienaListenerThread(sienaURL, log, dbg);
+    Thread t = new Thread(mp.slt);
+    if (debug) dbg.println(fn + ": starting slt");  // debug
+    t.start();
   }
 
-  public void warning(SAXParseException e) throws SAXException {
-    printMsg("Warning:" + e.getMessage());
-  }
-
-  public void error(SAXParseException e) throws SAXException {
-    throw new SAXException(e.getMessage());
-  }
-
-  public void fatalError(SAXParseException e) throws SAXException {
-    printMsg("Fatal error");
-    throw new SAXException(e.getMessage());
-  }
-
-  static URL fileToURL(File file) {
-
-    String path = file.getAbsolutePath();
-    String fSep = System.getProperty("file.separator");
-
-    if ((fSep != null) && (fSep.length() == 1)) {
-      path = path.replace(fSep.charAt(0), '/');
-    }
-    if ((path.length() > 0) && (path.charAt(0) != '/')) {
-      path = '/' + path;
-    }
-    try {
-      return new URL("file", null, path);
-    } catch (java.net.MalformedURLException e) {
-      throw new Error("unexpected MalformedURLException");
-    }
+  synchronized public static String getSESchema() {
+    return seSchema;
   }
 }

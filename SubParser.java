@@ -6,24 +6,36 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-
+/** Validating subordinate parser thread.
+  *
+  * $Log$
+  * Revision 2.2  2001-01-28 17:52:17  png3
+  * New version of Metaparser: fully multithreaded.  PrintWriter logs.
+  *
+  */
 public class SubParser extends DefaultHandler implements Runnable {
 
-  Locator locator;
+  Locator loc;
   int depth = 0;
   static final String spc = "  ";
-  PipedReader pis = null;
+  PipedReader pr = null;
   XMLSchema schema = null;
-  String instance = "";
+  String inst = "";
+  // parent
+  Validator v = null;
 
-  SubParser(PipedWriter pos, XMLSchema s, String inst) 
-  	throws IOException {
-    instance = inst;
+  SubParser(PipedWriter pw, XMLSchema s, String inst, 
+  	Validator v) throws IOException {
+    
+    final String fn = inst+"_SP_ctor: ";
+
+    this.inst = inst;
     schema = s;
+    this.v = v;
     try {
-      pis = new PipedReader(pos);
+      pr = new PipedReader(pw);
     } catch (IOException ioe) {
-      printMsg("Error creating PipedReader:" + ioe);
+      v.prLog(fn+"Error creating PipedReader:" + ioe);
       throw ioe;
     }
   }
@@ -32,15 +44,12 @@ public class SubParser extends DefaultHandler implements Runnable {
     for (int i = 0; i < depth; ++i) {
       System.err.print(spc);
     }
-    System.err.println(instance + ": " + m);
-  }
-
-  public String printLoc() {
-    return (locator.getLineNumber() + ":" 
-    	+ locator.getColumnNumber());
+    System.err.println(inst + ": " + m);
   }
 
   public void run() {
+
+    final String fn = inst+"_SP_run: ";
 
     SAXParser p = new SAXParser();
     p.setValidationMode(XMLParser.SCHEMA_VALIDATION);
@@ -48,92 +57,116 @@ public class SubParser extends DefaultHandler implements Runnable {
     p.setErrorHandler(this);
     p.setXMLSchema(schema);
 
-    printMsg("starting to parse");
+    v.prDbg(fn+"starting to parse");
     try {
-      p.parse(pis);
-    } catch (XMLParseException xmlpe) {
-      printMsg("XMLParseException during parsing at " +
-	printLoc() + ":" + xmlpe.getMessage());
-      return;
-    } catch (SAXException se) {
-      printMsg("SAXException during parsing:" + se.getMessage());
-      return;
-
-    } catch (IOException ioe) {
-      printMsg("IOException during parsing:" + ioe.getMessage());
+      p.parse(pr);
+    } catch (Exception e) {
+      v.prLog(fn+"Exception during parsing:" + e.getMessage());
       return;
     }
-    printMsg("Done parsing");
+    v.prDbg(fn+"Done parsing");
   }
 
-  public void setDocumentLocator(Locator locator) {
-    printMsg("SetDocumentLocator:");
-    this.locator = locator;
+  public void setDocumentLocator(Locator loc) {
+
+    final String fn = inst+"_SP_setDocLoc: ";
+
+    v.prDbg(fn+"SetDocumentLocator:");
+    this.loc = loc;
   }
 
   public void startDocument() {
-    printMsg("StartDocument");
+
+    final String fn = inst+"_SP_startDoc: ";
+
+    v.prDbg(fn+"StartDocument");
   }
 
   public void endDocument() throws SAXException {
-    printMsg("EndDocument");
+
+    final String fn = inst+"_SP_endDoc: ";
+
+    v.prDbg(fn+"EndDocument");
   }
 
   public void startElement(
           String namespaceURI, String localName, String qName, Attributes atts)
             throws SAXException {
 
-    printMsg("StartElement (" + printLoc() + "):" + qName);
+    final String fn = inst+"_SP_startElm: ";
+
+    v.prDbg(fn+"StartElement (" + MPUtil.printLoc(loc) + "):" + qName);
     for (int i = 0; i < atts.getLength(); i++) {
       String aname = atts.getQName(i);
       String type  = atts.getType(i);
       String value = atts.getValue(i);
 
-      printMsg("   " + aname + "(" + type + ")" + "=" + value);
+      v.prDbg(fn+"   " + aname + "(" + type + ")" + "=" + value);
     }
     ++depth;
   }
 
   public void endElement(String namespaceURI, String localName, String qName) 
   	throws SAXException {
+
+    final String fn = inst+"_SP_endElm: ";
+
     --depth;
-    printMsg("EndElement:" + qName);
+    v.prDbg(fn+"EndElement:" + qName);
   }
 
   public void startPrefixMapping(String prefix, String uri) throws SAXException {
-    printMsg("startPrefixMapping: prefix:" + prefix);
-    printMsg("\turi:" + uri);
+
+    final String fn = inst+"_SP_startPM: ";
+
+    v.prDbg(fn+"startPrefixMapping: prefix:" + prefix);
+    v.prDbg(fn+"\turi:" + uri);
   }
 
   public void endPrefixMapping(String prefix) throws SAXException {
-    printMsg("EndPrefixMapping:" + prefix);
+
+    final String fn = inst+"_SP_endPM: ";
+
+    v.prDbg(fn+"EndPrefixMapping:" + prefix);
   }
 
   public void skippedEntity(String entity) throws SAXException {
-    printMsg("skippedEntity:" + entity);
+
+    final String fn = inst+"_SP_skippedEntity: ";
+
+    v.prDbg(fn+"skippedEntity:" + entity);
   }
 
   public void characters(char[] cbuf, int start, int len) {
-    printMsg("Characters:" + new String(cbuf, start, len));
+
+    final String fn = inst+"_SP_CData: ";
+
+    v.prDbg(fn+"Characters:" + new String(cbuf, start, len));
   }
 
   public void ignorableWhitespace(char[] cbuf, int start, int len) {
-    printMsg("IgnorableWhiteSpace");
+
+    final String fn = inst+"_SP_WS: ";
+
+    v.prDbg(fn+"IgnorableWhiteSpace");
   }
 
   public void processingInstruction(String target, String data)
           throws SAXException {
-    printMsg("ProcessingInstruction:" + target + " " + data);
+
+    final String fn = inst+"_SP_PI: ";
+
+    v.prDbg(fn+"ProcessingInstruction:" + target + " " + data);
     if (target.toLowerCase().equals("flexml")) {
       ++depth;
-      printMsg("Found FleXML tag!");
+      v.prDbg(fn+"Found FleXML tag!");
       ++depth;
       StringTokenizer st = new StringTokenizer(data);
       while (st.hasMoreTokens()) {
         String piAttr = st.nextToken();
         StringTokenizer st2 = new StringTokenizer(piAttr, "= \"");
 	if (st2.countTokens() != 2) {
-	  printMsg("Malformed PI Attribute: " + piAttr);
+	  v.prDbg(fn+"Malformed PI Attribute: " + piAttr);
 	} else {
 	  String piaName = st2.nextToken();
 	  String piaVal = st2.nextToken();
@@ -141,7 +174,7 @@ public class SubParser extends DefaultHandler implements Runnable {
 	  if (piaName.toLowerCase().equals("type")) {
 	    if (piaVal.toLowerCase().equals("schemafrag")) {
 	      ++depth;
-	      printMsg("*** found schemaFrag PI ***");
+	      v.prDbg(fn+"*** found schemaFrag PI ***");
 	      --depth;
 	    }
 	  }
@@ -153,33 +186,25 @@ public class SubParser extends DefaultHandler implements Runnable {
   }
 
   public void warning(SAXParseException e) throws SAXException {
-    printMsg("Warning:" + e.getMessage());
+
+    final String fn = inst+"_SP_warning: ";
+
+    v.prLog(fn+"Warning:" + e.getMessage());
   }
 
   public void error(SAXParseException e) throws SAXException {
+
+    final String fn = inst+"_SP_error: ";
+
     throw new SAXException(e.getMessage());
   }
 
   public void fatalError(SAXParseException e) throws SAXException {
-    printMsg("Fatal error");
+
+    final String fn = inst+"_SP_fatalError: ";
+
+    v.prLog(fn+"Fatal error");
     throw new SAXException(e.getMessage());
   }
 
-  static URL fileToURL(File file) {
-
-    String path = file.getAbsolutePath();
-    String fSep = System.getProperty("file.separator");
-
-    if ((fSep != null) && (fSep.length() == 1)) {
-      path = path.replace(fSep.charAt(0), '/');
-    }
-    if ((path.length() > 0) && (path.charAt(0) != '/')) {
-      path = '/' + path;
-    }
-    try {
-      return new URL("file", null, path);
-    } catch (java.net.MalformedURLException e) {
-      throw new Error("unexpected MalformedURLException");
-    }
-  }
 }
