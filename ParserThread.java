@@ -17,7 +17,10 @@ import java.util.*;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.1  2001-01-28 17:52:17  png3
+  * Revision 2.2  2001-01-29 03:55:34  png3
+  * zapping Def.java.  Replaced by the superior Simin tagprocessor stuff
+  *
+  * Revision 2.1  2001/01/28 17:52:17  png3
   * New version of Metaparser: fully multithreaded.  PrintWriter logs.
   *
   */
@@ -308,9 +311,9 @@ class ParserThread extends DefaultHandler
 	  String piaVal = st2.nextToken();
 	  prDbg(fn+piaName + " = " + piaVal);
 	  if (piaName.toLowerCase().equals("type")) {
-	    if (piaVal.toLowerCase().equals("schemaslot")) {
+	    if (piaVal.toLowerCase().equals("schemafrag")) {
 	      ++depth;
-	      prDbg(fn+"*** found schemaSlot PI ***");
+	      prDbg(fn+"*** found schemaFrag PI ***");
 	      // next element needs to be saved as "outermost"
 	      // element of subdocument
 	      spawnParser = true;
