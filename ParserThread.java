@@ -10,6 +10,7 @@ import org.apache.xerces.parsers.*;
 // import psl.worklets2.worklets.*;
 import psl.worklets.*;
 import psl.codetransfer.*;
+import psl.kx.*;
 
 import siena.*;
 
@@ -23,7 +24,11 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.8  2001-04-11 18:55:17  png3
+  * Revision 2.9  2001-04-18 19:49:50  png3
+  * modified synchronization method for worklet arrival.  I thought incorrectly
+  * that wait()-ing on an object released _all_ of its locks
+  *
+  * Revision 2.8  2001/04/11 18:55:17  png3
   * fixed bug with not storing object ref in _wklArrivals
   *
   * Revision 2.7  2001/03/14 08:17:13  png3
@@ -167,13 +172,16 @@ class ParserThread extends DefaultHandler
 	    prDbg(fn+"worklet had already arrived:"+
 	    	(Date)_wklArrivals.get(requestID));
 	  } else {
-	    Object lockObj = new Object();
-	    _wklArrivals.put(requestID, lockObj);
-	    synchronized (lockObj) {
-	      prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
-	      lockObj.wait();
+	    // Object lockObj = new Object();
+	    //_wklArrivals.put(requestID, lockObj);
+	    _wklArrivals.put(requestID, null);
+	    prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
+	    _wklArrivals.wait();
+	    Date d = (Date) _wklArrivals.get(requestID);
+	    if (d == null) {
+	      _wklArrivals.wait();
 	    }
-	    prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
+	    prDbg(fn+"worklet arrived:" + d);
 	  }
 	}
 	
@@ -215,6 +223,11 @@ class ParserThread extends DefaultHandler
 	}
 
 	prDbg(fn+"Resulting Hashtable is: " + ht);
+	// TODO what's my number?
+	KXNotification edAlert = KXNotification.EDInputKXNotification(
+					"psl.metaparser.ParserThread", 0, ht);
+	slt.publish(edAlert);
+	
      }
 
     } catch (Exception e) {

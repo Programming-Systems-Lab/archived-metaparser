@@ -12,7 +12,11 @@ import siena.*;
   * One argument: xml message to include.
   *
   * $Log$
-  * Revision 2.4  2001-02-05 06:35:16  png3
+  * Revision 2.5  2001-04-18 19:49:50  png3
+  * modified synchronization method for worklet arrival.  I thought incorrectly
+  * that wait()-ing on an object released _all_ of its locks
+  *
+  * Revision 2.4  2001/02/05 06:35:16  png3
   * Post California version
   *
   * Revision 2.3  2001/01/30 10:16:55  png3
