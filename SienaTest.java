@@ -3,13 +3,17 @@ package psl.metaparser;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
 import siena.*;
 
 /** Generates ED-like XML notification.
   * One argument: xml message to include.
   *
   * $Log$
-  * Revision 2.2  2001-01-29 04:04:48  png3
+  * Revision 2.3  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.2  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.1  2001/01/28 17:52:17  png3
@@ -22,23 +26,23 @@ public class SienaTest {
   public static void main(String[] args) {
 
     String xml = null;
-
+    String s;
 
     HierarchicalDispatcher hd = new HierarchicalDispatcher();
     try {
       hd.setReceiver(new TCPPacketReceiver(31339));
       hd.setMaster("senp://canal.psl.cs.columbia.edu:4321");
-    } catch (InvalidSenderException ise) {
-      System.err.println("Invalid Sender:" + ise);
-      return;
     } catch (IOException ioe) {
       System.err.println("Unable to set hd receiver:" + ioe);
+      return;
+    } catch (InvalidSenderException ise) {
+      System.err.println("Invalid Sender:" + ise);
       return;
     }
 
     System.err.println("Reading test file " + args[0]);
     StringBuffer sb = new StringBuffer();
-    String s = null;
+    s = null;
     try {
       BufferedReader tf_br = new BufferedReader(new FileReader(args[0]));
       do {

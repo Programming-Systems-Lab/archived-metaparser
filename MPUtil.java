@@ -5,15 +5,18 @@ import java.util.*;
 import java.io.*;
 import java.net.URL;
 
-import oracle.xml.parser.schema.*;
-import oracle.xml.parser.v2.*;
+// import oracle.xml.parser.schema.*;
+// import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 
 /** Various static utility methods for metaparser.
   *
   * $Log$
-  * Revision 2.2  2001-01-29 04:04:48  png3
+  * Revision 2.3  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.2  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.1  2001/01/28 17:52:17  png3
@@ -58,7 +61,7 @@ class MPUtil {
 
   /** pulls subschema out of oracle response XML */
   // TODO: integrate with other logging...
-  public static XMLSchema extractSchema(String s) {
+  public static void extractSchema(String s) {
     final String fn = "MPU_extractSchema: ";
     final String startTag = "<subschema>";
     final String endTag = "</subschema>";
@@ -66,18 +69,21 @@ class MPUtil {
     int endIdx = s.indexOf(endTag, startIdx);
     String result = s.substring(startIdx, endIdx);
     System.err.println(fn+"extracted schema String:\n" + result);
-    StringReader sr = new StringReader(result);
-    XMLSchema schema = null;
+
+    // StringReader sr = new StringReader(result);
+    // XMLSchema schema = null;
     try {
-      URL base = new URL("http://www.w3.org/1999/XMLSchema-instance");
-      XSDBuilder b = new XSDBuilder();
-      schema = (XMLSchema)b.build(sr, base);
+      FileWriter schema = new FileWriter("schema.xsd");
+      schema.write(result);
+      schema.close();
+      // URL base = new URL("http://www.w3.org/1999/XMLSchema-instance");
+      // XSDBuilder b = new XSDBuilder();
+      // schema = (XMLSchema)b.build(sr, base);
     } catch (Exception e) {
       System.err.println(fn+"error while building schema");
       System.err.println(e);
-      return null;
+      return;
     }
-    return schema;
   }
 
   // got this from Oracle, but I think it's been superseded

@@ -4,21 +4,16 @@ import java.io.PrintWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import siena.HierarchicalDispatcher;
-import siena.Siena;
-import siena.SienaException;
-import siena.Notification;
-import siena.Notifiable;
-import siena.Filter;
-import siena.AttributeValue;
-import siena.TCPPacketReceiver;
-import siena.InvalidSenderException;
+import siena.*;
 
 /** Listener for incoming Siena events.
   * Spawns ParserThreads.
   *
   * $Log$
-  * Revision 2.2  2001-01-29 04:04:48  png3
+  * Revision 2.3  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.2  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.1  2001/01/28 17:52:17  png3
@@ -95,6 +90,7 @@ class SienaListenerThread implements Runnable {
 	System.err.println("SLT shutting down");
 	hd.shutdown();
       } }); 
+
     // create filters
     // #1, stuff coming from ED
     Filter f1 = new Filter();

@@ -2,12 +2,14 @@ package psl.metaparser;
 
 import java.io.*;
 import org.xml.sax.*;
-import oracle.xml.parser.schema.*;
 
 /** Input controller.  Selectively feeds data to a SubParser.
   *
   * $Log$
-  * Revision 2.2  2001-01-29 04:04:48  png3
+  * Revision 2.3  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.2  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.1  2001/01/28 17:52:17  png3
@@ -39,7 +41,7 @@ class Validator {
   synchronized void prLog(String m) {log.println(m);}
   synchronized void prDbg(String m) {if (debug) dbg.println(m);}
 
-  Validator(String s, PipedWriter o, XMLSchema xmls, String inst, 
+  Validator(String s, PipedWriter o, String inst, 
   	boolean debug) 
     throws IOException {
 
@@ -47,7 +49,7 @@ class Validator {
     
     try {
       br = new BufferedReader(new StringReader(s));
-      sp = new SubParser(o, xmls, inst, this);
+      sp = new SubParser(o, inst, this);
     } catch (IOException ioe) {
       System.err.println(fn + "I/O Exception:" + ioe);
       throw ioe;
@@ -79,10 +81,10 @@ class Validator {
     t.start();
   }
 
-  Validator(String s, PipedWriter o, XMLSchema xmls, String inst, 
+  Validator(String s, PipedWriter o, String inst, 
   	boolean debug, Locator l) throws IOException {
 
-    this(s, o, xmls, inst, debug);
+    this(s, o, inst, debug);
 
     final String fn = inst+"_ctor_2: ";
 

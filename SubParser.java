@@ -1,9 +1,8 @@
 package psl.metaparser;
 
-import oracle.xml.parser.schema.*;
-import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
+import org.apache.xerces.parsers.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -11,7 +10,10 @@ import java.util.*;
 /** Validating subordinate parser thread.
   *
   * $Log$
-  * Revision 2.3  2001-01-29 04:04:48  png3
+  * Revision 2.4  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.3  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.2  2001/01/28 17:52:17  png3
@@ -24,18 +26,18 @@ public class SubParser extends DefaultHandler implements Runnable {
   int depth = 0;
   static final String spc = "  ";
   PipedReader pr = null;
-  XMLSchema schema = null;
+  // XMLSchema schema = null;
   String inst = "";
   // parent
   Validator v = null;
 
-  SubParser(PipedWriter pw, XMLSchema s, String inst, 
+  SubParser(PipedWriter pw, String inst, 
   	Validator v) throws IOException {
     
     final String fn = inst+"_SP_ctor: ";
 
     this.inst = inst;
-    schema = s;
+    // schema = s;
     this.v = v;
     try {
       pr = new PipedReader(pw);
@@ -57,14 +59,23 @@ public class SubParser extends DefaultHandler implements Runnable {
     final String fn = inst+"_SP_run: ";
 
     SAXParser p = new SAXParser();
-    p.setValidationMode(XMLParser.SCHEMA_VALIDATION);
+    try {
+      p.setFeature("http://xml.org/sax/features/validation", true);
+      p.setFeature("http://xml.org/sax/features/namespaces", true);
+      p.setFeature("http://apache.org/xml/features/validation/schema", true);
+    } catch (SAXNotSupportedException snse) {
+      v.prLog(fn+"Feature not supported:" + snse.getMessage());
+      return;
+     } catch (SAXNotRecognizedException snre) {
+      v.prLog(fn+"Exception setting feature:" + snre.getMessage());
+      return;
+    }
     p.setContentHandler(this);
     p.setErrorHandler(this);
-    p.setXMLSchema(schema);
 
     v.prDbg(fn+"starting to parse");
     try {
-      p.parse(pr);
+      p.parse(new InputSource(pr));
     } catch (Exception e) {
       v.prLog(fn+"Exception during parsing:" + e.getMessage());
       return;

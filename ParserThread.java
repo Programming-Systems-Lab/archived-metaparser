@@ -1,9 +1,10 @@
 package psl.metaparser;
 
-import oracle.xml.parser.schema.*;
-import oracle.xml.parser.v2.*;
+// import oracle.xml.parser.schema.*;
+// import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
+import org.apache.xerces.parsers.*;
 
 import psl.worklets2.wvm.*;
 import psl.worklets2.worklets.*;
@@ -15,11 +16,16 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import psl.tagprocessor.TagProcessor;
+
 /** Handles the parsing one input XML message.
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.3  2001-01-29 04:04:48  png3
+  * Revision 2.4  2001-01-30 10:16:55  png3
+  * Almost working...
+  *
+  * Revision 2.3  2001/01/29 04:04:48  png3
   * Added package psl.metaparser statements.  Can you say "Oops?"
   *
   * Revision 2.2  2001/01/29 03:55:34  png3
@@ -45,7 +51,7 @@ class ParserThread extends DefaultHandler
   String moduleName = null;
 
   // for SmartEventSchema
-  XMLSchema se = null;
+  // XMLSchema se = null;
 
   Stack valStack = null;
   Validator currentVal = null;
@@ -88,6 +94,7 @@ class ParserThread extends DefaultHandler
     }
 
     valStack = new Stack();
+    /*
     String seSchema = Metaparser.getSESchema();
     if (debug) dbg.println(fn+"reading in schema " + seSchema); // debug
     try {
@@ -100,22 +107,35 @@ class ParserThread extends DefaultHandler
       log.println(e);
       return;
     }
+    */
 
+    Hashtable ht = new Hashtable();
     SAXParser p = new SAXParser();
-    p.setValidationMode(XMLParser.NONVALIDATING);
+    // p.setValidationMode(XMLParser.NONVALIDATING);
     p.setContentHandler(this);
     p.setErrorHandler(this);
-
+    try {
+      p.setFeature("http://xml.org/sax/features/validation", false);
+      p.setFeature("http://xml.org/sax/features/namespaces", true);
+      p.setFeature("http://apache.org/xml/features/validation/schema", false);
+    } catch (SAXNotRecognizedException snre) {
+      prLog(fn+"Exception setting feature:" + snre.getMessage());
+      return;
+    } catch (SAXNotSupportedException snse) {
+      prLog(fn+"Feature not supported:" + snse.getMessage());
+      return;
+    }
+ 
     if (debug) dbg.println(fn+"creating new validator");  // debug
     try {
       currentVal = new Validator(xml, new PipedWriter(),
-      	se, "SEValid" + instNr, debug);
+      	"SEValid" + instNr, debug);
       // initialize outermost depth
       currentVal.setDepth(-1);
       currentVal.setElement(null);
 
       if (debug) dbg.println(fn+"starting to parse");  // debug
-      p.parse(new StringReader(xml));
+      p.parse(new InputSource(new StringReader(xml)));
       currentVal.close(true);
 
       prDbg(fn+"checking for processor");  // debug
@@ -134,11 +154,42 @@ class ParserThread extends DefaultHandler
 	    prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
 	  }
 	}
-	// prDbg(fn+"casting to Def");
-        // Def d = (Def) Class.forName(moduleName).newInstance();
-	// System.out.println("Here it comes...");
-	// d.dummy();
-      }
+	try {
+	// Let Simin work his magic
+	  URL[] jarPath = new URL[]{new URL("file://"+moduleName)};
+	  URLClassLoader loader = new URLClassLoader(jarPath);
+	  Class cls = Class.forName
+	      ("psl.tagprocessor.TagProcessorImpl", true, loader);
+	  
+	  // System.out.println("Working with " + xmlDoc);
+	  XMLReader reader = XMLReaderFactory.createXMLReader
+	  ("org.apache.xerces.parsers.SAXParser");
+	  try {
+	    reader.setFeature("http://xml.org/sax/features/validation", false);
+	    reader.setFeature("http://xml.org/sax/features/namespaces", true);
+	    reader.setFeature("http://apache.org/xml/features/validation/schema", false);
+	  } catch (SAXNotRecognizedException snre) {
+	    prLog(fn+"Exception setting feature:" + snre.getMessage());
+	    return;
+	  } catch (SAXNotSupportedException snse) {
+	    prLog(fn+"Feature not supported:" + snse.getMessage());
+	    return;
+	  }
+	  TagProcessor tp = (TagProcessor) cls.newInstance();
+	  //tp.setJarPath("file:");
+	  //tp.setResource(jarPath[0].getPath());
+	  tp.setResource(moduleName);
+	  tp.init(ht);
+	  reader.setContentHandler(tp.getContentHandler());
+	  reader.parse(new InputSource(new StringReader(xml)));
+	  tp.process();
+	} catch (Exception e) {
+	  log.println("Error during TagProcessor Execution:" + e);
+	  return;
+	}
+
+	prDbg(fn+"Resulting Hashtable is: " + ht);
+     }
 
     } catch (Exception e) {
       log.println(fn+"Exception during parsing at " + 
@@ -219,14 +270,19 @@ class ParserThread extends DefaultHandler
 	// hash entry now has the XML string
 	oracleResp = (String)Metaparser.waitList.get(requestID);
 	prDbg(fn+"retrieved OResp of:"+oracleResp);
-	XMLSchema subSchema = MPUtil.extractSchema(oracleResp);
+	// XMLSchema subSchema = MPUtil.extractSchema(oracleResp);
+	MPUtil.extractSchema(oracleResp);
 	moduleName = MPUtil.extractModuleName(oracleResp);
 	// we have a new schema.  parse it out, suck it in...
 	currentVal = new Validator(xml, new PipedWriter(),
-	  subSchema, "SubValid" + instNr, debug, loc);
+	  "SubValid" + instNr, debug, loc);
 	currentVal.send("<?xml version='1.0' encoding='UTF-8'?>");
-	// mega-hack -- we've already skipped past it...
-	currentVal.send("<"+qName+">");
+	// mega-hack -- defies description
+	// extracted XML is sitting in file schema.xsd
+	currentVal.send("<"+qName+
+		" xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'" +
+  		" xsi:NoNamespaceSchemaLocation='schema.xsd'" +
+		 ">");
       } catch (Exception e) {
 	prLog(fn+"Exception with Oracle communication: " + e);
       }
