@@ -6,8 +6,9 @@ import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 import org.apache.xerces.parsers.*;
 
-import psl.worklets2.wvm.*;
-import psl.worklets2.worklets.*;
+// import psl.worklets2.wvm.*;
+// import psl.worklets2.worklets.*;
+import psl.worklets.*;
 import psl.codetransfer.*;
 
 import siena.*;
@@ -22,7 +23,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.5  2001-02-05 06:35:16  png3
+  * Revision 2.6  2001-03-12 08:07:39  png3
+  * now links with worklets.*
+  *
+  * Revision 2.5  2001/02/05 06:35:16  png3
   * Post California version
   *
   * Revision 2.4  2001/01/30 10:16:55  png3
