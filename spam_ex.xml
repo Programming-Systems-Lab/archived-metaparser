@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<smartevent 
+	xmlns:xsi="http://www.w3.org/1999/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="SmartEventSchema.xsd"
+>
+  <metadata>
+    <tag>31415</tag>
+    <source>
+      <ipAddr>mail.cs.columbia.edu</ipAddr>
+      <ipPort>2500</ipPort>
+    </source>
+    <time>2001-01-20T21:45:00</time>
+  </metadata>
+  <?FleXML type="schemaFrag" name="sendmail/biff" version="1.0"?> 
+  <smtp>
+    <to>jjp32@cs.columbia.edu</to>
+    <from>spammer@localhost.localdomain</from>
+    <subject>Make Money Fast</subject>
+    <sent>2000-11-20T19:00:00</sent>
+    <received>2000-11-20T19:02:00</received>
+  </smtp>
+</smartevent>

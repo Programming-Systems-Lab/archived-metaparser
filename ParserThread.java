@@ -22,7 +22,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.4  2001-01-30 10:16:55  png3
+  * Revision 2.5  2001-02-05 06:35:16  png3
+  * Post California version
+  *
+  * Revision 2.4  2001/01/30 10:16:55  png3
   * Almost working...
   *
   * Revision 2.3  2001/01/29 04:04:48  png3
@@ -71,7 +74,7 @@ class ParserThread extends DefaultHandler
   public String targetLocation() {return ".";}
 
   public void classesDelivered() {
-    System.err.println("Classes hath been delivered!");
+    System.err.println("Classes have been delivered!");
   }
 
   void prLog(String m) {log.println(m);}
@@ -140,7 +143,15 @@ class ParserThread extends DefaultHandler
 
       prDbg(fn+"checking for processor");  // debug
       if (moduleName != null) {
+
 	prDbg(fn+"module "+moduleName+" should be coming");  // debug
+	/*
+	// fake!
+	prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
+	Thread.currentThread().sleep(1000);
+	prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
+	*/
+
         synchronized (_wklArrivals) {
 	  if (_wklArrivals.containsKey(requestID)) {
 	    prDbg(fn+"worklet had already arrived:"+
@@ -154,6 +165,7 @@ class ParserThread extends DefaultHandler
 	    prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
 	  }
 	}
+	
 	try {
 	// Let Simin work his magic
 	  URL[] jarPath = new URL[]{new URL("file://"+moduleName)};
@@ -181,10 +193,13 @@ class ParserThread extends DefaultHandler
 	  tp.setResource(moduleName);
 	  tp.init(ht);
 	  reader.setContentHandler(tp.getContentHandler());
+	  dbg.println(fn+"TagProcessor about to parse");
 	  reader.parse(new InputSource(new StringReader(xml)));
+	  dbg.println(fn+"TagProcessor about to process");
 	  tp.process();
 	} catch (Exception e) {
 	  log.println("Error during TagProcessor Execution:" + e);
+	  e.printStackTrace();
 	  return;
 	}
 
@@ -199,6 +214,7 @@ class ParserThread extends DefaultHandler
       return;
     }
     prDbg(fn+"shutting down wvm");
+    // don't shutdown if fake
     wvm.shutdown();
     if (debug) dbg.println(fn+"Done parsing");
   }
@@ -232,7 +248,7 @@ class ParserThread extends DefaultHandler
     final String fn = "PT_startElement: ";
     String oracleResp = null;
 
-    prDbg(fn+"StartElement " + MPUtil.printLoc(loc) + ":" + qName);
+    prDbg(fn+MPUtil.printLoc(loc) + ":" + qName);
     for (int i = 0; i < atts.getLength(); i++) {
       String aname = atts.getQName(i);
       String type  = atts.getType(i);
@@ -248,6 +264,10 @@ class ParserThread extends DefaultHandler
       requestID = String.valueOf(System.currentTimeMillis());
 
       prDbg(fn+"creating new WVM("+slt.hostname+","+requestID+")");
+      /*
+      // fake!
+      System.out.println("WVM created");
+      */
       wvm = new WVM(this, slt.hostname, requestID);
 
       Notification n = new Notification();
@@ -259,6 +279,13 @@ class ParserThread extends DefaultHandler
       n.putAttribute("query", MPUtil.makeQuery(qName));
       prDbg(fn+"sending request to Oracle:" + n);
       try {
+      /*
+	// fake!
+	prDbg(fn+"going to sleep: " + MPUtil.timestamp());
+	Thread.currentThread().sleep(1000);
+	prDbg(fn+"awake again: " + MPUtil.timestamp());
+	moduleName="tagprocessor.jar";
+      */
 	slt.publish(n);
 	Object lockObj = new Object();
 	Metaparser.waitList.put(requestID, lockObj);
@@ -273,6 +300,7 @@ class ParserThread extends DefaultHandler
 	// XMLSchema subSchema = MPUtil.extractSchema(oracleResp);
 	MPUtil.extractSchema(oracleResp);
 	moduleName = MPUtil.extractModuleName(oracleResp);
+      
 	// we have a new schema.  parse it out, suck it in...
 	currentVal = new Validator(xml, new PipedWriter(),
 	  "SubValid" + instNr, debug, loc);
@@ -281,10 +309,10 @@ class ParserThread extends DefaultHandler
 	// extracted XML is sitting in file schema.xsd
 	currentVal.send("<"+qName+
 		" xmlns:xsi='http://www.w3.org/1999/XMLSchema-instance'" +
-  		" xsi:NoNamespaceSchemaLocation='schema.xsd'" +
-		 ">");
+  		" xsi:noNamespaceSchemaLocation='schema.xsd'>");
       } catch (Exception e) {
 	prLog(fn+"Exception with Oracle communication: " + e);
+	e.printStackTrace();
       }
 
       prDbg(fn+"*** Saving depth info of depth:" + depth

@@ -13,7 +13,10 @@ import org.xml.sax.helpers.*;
 /** Various static utility methods for metaparser.
   *
   * $Log$
-  * Revision 2.3  2001-01-30 10:16:55  png3
+  * Revision 2.4  2001-02-05 06:35:16  png3
+  * Post California version
+  *
+  * Revision 2.3  2001/01/30 10:16:55  png3
   * Almost working...
   *
   * Revision 2.2  2001/01/29 04:04:48  png3
@@ -50,12 +53,12 @@ class MPUtil {
   public static String extractModuleName(String s) {
     final String fn = "MPU_extractModuleName: ";
     final String startTag = "<module";
-    final String endTok = ".";
+    final String endTok = "</module>";
     int startIdx = s.indexOf(startTag);
     startIdx = s.indexOf(">", startIdx);
     int endIdx = s.indexOf(endTok, startIdx);
     String result = s.substring(startIdx + 1, endIdx);
-    System.err.println(fn+"Extracted Module:\n" + result);
+    System.err.println(fn+"Expected Module Name:\n" + result);
     return result;
   }
 

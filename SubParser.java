@@ -10,7 +10,10 @@ import java.util.*;
 /** Validating subordinate parser thread.
   *
   * $Log$
-  * Revision 2.4  2001-01-30 10:16:55  png3
+  * Revision 2.5  2001-02-05 06:35:16  png3
+  * Post California version
+  *
+  * Revision 2.4  2001/01/30 10:16:55  png3
   * Almost working...
   *
   * Revision 2.3  2001/01/29 04:04:48  png3

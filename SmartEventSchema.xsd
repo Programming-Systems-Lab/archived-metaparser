@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema>
+    <annotation>
+      <documentation>
+        Preliminary SmartEvent Schema
+	Copyright 2001 Trustees of Columbia University
+	in the City of New York.  All rights reserved.
+      </documentation>
+    </annotation>
+    
+  <!-- This type is used to identify a node participating in the system.
+       it's used for both source and target nodes -->
+  <element name="smartevent">
+    <complexType>
+      <sequence>
+        <!-- Basic metadata for an event.  The combination of source and tag
+	     should uniquely identify an event. -->
+	<element name="metadata">
+	  <!-- anonymous type -->
+	  <complexType>
+	    <sequence>
+	      <!-- sequential identifier -->
+	      <element name="tag" type="positiveInteger"/>
+	      <element name="source">
+	        <complexType>
+		  <sequence>
+		    <element name="ipAddr" type="string"/>
+		    <element name="ipPort" type="integer"/>
+		    <!-- Optional label: name, instance-id, etc. -->
+		    <element name="identifier" type="string" minOccurs="0"/>
+		  </sequence>
+	        </complexType>
+	      </element>
+
+	      <element name="dest" minOccurs="0">
+	        <complexType>
+		  <sequence>
+		    <element name="ipAddr" type="string"/>
+		    <element name="ipPort" type="integer"/>
+		    <!-- Optional label: name, instance-id, etc. -->
+		    <element name="identifier" type="string" minOccurs="0"/>
+		  </sequence>
+	        </complexType>
+	      </element>
+
+	      <!-- UTC timestamp -->
+	      <element name="time" type="timeInstant"/>
+	      <!-- tells KX system not to attempt to parse/distill XML -->
+	      <element name="kxOpaque" type="boolean" minOccurs="0"/>
+	      <!-- optional identifying info, e.g. probe name -->
+	      <element name="label" type="string" minOccurs="0"/>
+	      <!-- miscellaneous comment, passed through by the packager -->
+	      <element name="comment" type="string" minOccurs="0"/>
+
+	    </sequence>
+	  </complexType>
+	</element>
+
+	<!--  Indication that this is the position where
+	      schema fragments for the payload should be
+	      inserted.  See PSL FleXML documentation regarding
+              the semantics of FleXML hints.-->
+        <?FleXML type="schemaSubst"?>
+
+      </sequence>
+    </complexType>
+  </element>
+
+</schema>
