@@ -24,7 +24,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.9  2001-04-18 19:49:50  png3
+  * Revision 2.10  2001-04-18 19:55:18  png3
+  * fixed idiot error (program is unlikely to loop if there's no while statement...)
+  *
+  * Revision 2.9  2001/04/18 19:49:50  png3
   * modified synchronization method for worklet arrival.  I thought incorrectly
   * that wait()-ing on an object released _all_ of its locks
   *
@@ -176,10 +179,11 @@ class ParserThread extends DefaultHandler
 	    //_wklArrivals.put(requestID, lockObj);
 	    _wklArrivals.put(requestID, null);
 	    prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
-	    _wklArrivals.wait();
-	    Date d = (Date) _wklArrivals.get(requestID);
-	    if (d == null) {
+	    Date d = null;
+	    while (true) {
 	      _wklArrivals.wait();
+	      d = (Date) _wklArrivals.get(requestID);
+	      if (d != null) break;
 	    }
 	    prDbg(fn+"worklet arrived:" + d);
 	  }
