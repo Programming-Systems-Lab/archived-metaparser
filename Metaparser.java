@@ -16,10 +16,9 @@ public class Metaparser extends DefaultHandler {
 
   Siena s = null;
 
-  boolean flexMode = false;
-  // these two are used to determine if the "subschema" is done
-  int targetDepth = -1;
-  String targetElement  = null;
+  boolean spawnParser = false;
+  boolean fileMode = false;
+  String file = null;  // only used in fileMode;
 
   Stack parserStack = null;
   XReader currentXR = null;
@@ -36,14 +35,19 @@ public class Metaparser extends DefaultHandler {
 
   private void printMsg(String m) {
     for (int i = 0; i < depth; ++i) {
-      System.out.print(spc);
+      System.err.print(spc);
     }
-    System.out.println(m);
+    System.err.println(m);
   }
 
   private String printLoc() {
     return (locator.getLineNumber() + ":" 
     	+ locator.getColumnNumber());
+  }
+
+  public static String printLoc(Locator l) {
+    return (l.getLineNumber() + ":" 
+    	+ l.getColumnNumber());
   }
 
   /** Constructor */
@@ -91,14 +95,14 @@ public class Metaparser extends DefaultHandler {
   }
 
   public void handleEDNotification(Notification n) {
-    System.out.println("got ED notification");
+    System.err.println("got ED notification");
     AttributeValue av = n.getAttribute("SmartEvent");
     xml = av.stringValue();
     parse();
   }
 
   public void handleOracleNotification(Notification n) {
-    System.out.println("got Oracle notification:" + n);
+    System.err.println("got Oracle notification:" + n);
   }
 
 
@@ -106,6 +110,11 @@ public class Metaparser extends DefaultHandler {
   // same underlying source.  isSub will be used to create
   // multiple Readers.
   public void parse() {
+   StringReader sr = new StringReader(xml);
+   parse(sr);
+  }
+
+  public void parse(Reader r) {
     SAXParser p = new SAXParser();
     
     p.setValidationMode(XMLParser.NONVALIDATING);
@@ -114,20 +123,66 @@ public class Metaparser extends DefaultHandler {
 
     printMsg("starting to parse");
     try {
-      currentXR = new XReader(new StringReader(xml), new PipedOutputStream(),
+      currentXR = new XReader(r, new PipedWriter(),
       	se, "Validator_1");
-      p.parse(new ByteArrayInputStream(xml.getBytes()));
+      // initialize outermost depth
+      currentXR.setDepth(-1);
+      currentXR.setElement(null);
+
+      p.parse(new StringReader(xml));
       currentXR.close(true);
     } catch (XMLParseException xmlpe) {
       printMsg("XMLParseException during parsing at " +
 	printLoc() + ":" + xmlpe.getMessage());
+      xmlpe.printStackTrace();
       return;
     } catch (SAXException se) {
       printMsg("SAXException during parsing:" + se.getMessage());
+      se.printStackTrace();
       return;
 
     } catch (IOException ioe) {
       printMsg("IOException during parsing:" + ioe.getMessage());
+      ioe.printStackTrace();
+      return;
+    }
+    printMsg("Done parsing");
+  }
+
+
+  /** actually test code to trace problem with reading strings */
+  public void parse(String f) {
+    fileMode = true;
+    file = f;
+    SAXParser p = new SAXParser();
+    
+    p.setValidationMode(XMLParser.NONVALIDATING);
+    p.setContentHandler(this);
+    p.setErrorHandler(this);
+
+    printMsg("starting to parse");
+    try {
+      currentXR = new XReader(new FileReader(file), new PipedWriter(),
+      	se, "Validator_1");
+      // initialize outermost depth
+      currentXR.setDepth(-1);
+      currentXR.setElement(null);
+
+      p.parse(new FileReader(file));
+      currentXR.close(true);
+    } catch (XMLParseException xmlpe) {
+      printMsg("XMLParseException during parsing at " +
+	printLoc() + ":" + xmlpe.getMessage());
+      xmlpe.printStackTrace();
+      return;
+    } catch (SAXException se) {
+      printMsg("SAXException during parsing:" + se.getMessage());
+      se.printStackTrace();
+      return;
+
+    } catch (IOException ioe) {
+      printMsg("IOException during parsing:" + ioe.getMessage());
+      ioe.printStackTrace();
       return;
     }
     printMsg("Done parsing");
@@ -141,8 +196,8 @@ public class Metaparser extends DefaultHandler {
     BufferedReader br;
 
     if (args.length < 2) {
-      System.out.println("Usage:");
-      System.out.println("\tMetaparser <schema-file-1> <schema-file-2> [<test-file>]");
+      System.err.println("Usage:");
+      System.err.println("\tMetaparser <schema-file-1> <schema-file-2> [<test-file>]");
       return;
     }
 
@@ -160,6 +215,7 @@ public class Metaparser extends DefaultHandler {
       b = new XSDBuilder();
     } catch (XSDException xsde) {
       mt.printMsg("Exception when creating XSDBuilder():" + xsde.getMessage());
+      xsde.printStackTrace();
       return;
     }
 
@@ -168,6 +224,7 @@ public class Metaparser extends DefaultHandler {
       mt.se = (XMLSchema) b.build(seURL);
     } catch (Exception e) {
       mt.printMsg("Exception when building schema:" + e.getMessage());
+      e.printStackTrace();
       return;
     }
  
@@ -176,6 +233,7 @@ public class Metaparser extends DefaultHandler {
       mt.frag = (XMLSchema) b.build(fragURL);
     } catch (Exception e) {
       mt.printMsg("Exception when building schema:" + e.getMessage());
+      e.printStackTrace();
       return;
     }
 
@@ -187,14 +245,20 @@ public class Metaparser extends DefaultHandler {
 	BufferedReader tf_br = new BufferedReader(new FileReader(args[2]));
 	do {
 	  s = tf_br.readLine();
-	  sb.append(s);
+	  if (s != null) {
+	    sb.append(s);
+	    sb.append("\n");
+	  }
 	} while (s != null);
       } catch (IOException ioe) {
 	mt.printMsg("Exception when reading " + args[2] + ":" + ioe);
 	return;
       }
       mt.xml = sb.toString();
+      mt.printMsg("About to parse:\n" + mt.xml+"\n.");
       mt.parse();
+
+      // mt.parse(args[2]);
     }
   }
  
@@ -228,13 +292,13 @@ public class Metaparser extends DefaultHandler {
     } catch (IOException ioe) {
       printMsg("Flush error:" + ioe);
     }
-    if (flexMode) {
+    if (spawnParser) {
       // these should be pushed on to the stack also...
       printMsg("*** Saving depth info of depth:" + depth
         + ", targetElement:" + qName);
-      targetDepth = depth;
-      targetElement = qName;
-      flexMode = false;
+      currentXR.setDepth(depth);
+      currentXR.setElement(qName);
+      spawnParser = false;
     }
     ++depth;
   }
@@ -248,11 +312,8 @@ public class Metaparser extends DefaultHandler {
     } catch (IOException ioe) {
       printMsg("Flush error:" + ioe);
     }
-    if ((targetDepth == depth) && (targetElement.equals(qName))) {
+    if ((currentXR.getDepth() == depth) && (currentXR.getElement().equals(qName))) {
       printMsg("*** Popping back to previous parser");
-      // should be a pop()
-      targetDepth = -1;
-      targetElement = null;
       try {
 	currentXR.close(false);
 	currentXR = (XReader)parserStack.pop();
@@ -315,13 +376,18 @@ public class Metaparser extends DefaultHandler {
 	      printMsg("*** pushing currentXR");
 	      parserStack.push(currentXR);
 	      try {
-		currentXR = new XReader(new StringReader(xml), 
-		  new PipedOutputStream(), frag, "Validator_2", locator);
+	        if (fileMode) {
+		  currentXR = new XReader(new FileReader(file),
+		    new PipedWriter(), frag, "Validator_2", locator);
+		} else {
+		  currentXR = new XReader(new StringReader(xml), 
+		    new PipedWriter(), frag, "Validator_2", locator);
+		}
 		currentXR.send("<?xml version='1.0' encoding='UTF-8'?>");
 	      } catch (IOException ioe) {
 	        printMsg("XReader creation error: " + ioe);
 	      }
-	      flexMode = true;
+	      spawnParser = true;
 	      --depth;
 	    }
 	  }
