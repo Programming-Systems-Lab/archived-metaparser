@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<ruleset namespace="xmlns:bo='http://www.book.org'">
+  <complexRule>
+    <condition>
+      <variable name="a" type="int" location="//bo:Date[1]"/>
+      <operator type="GT"/>
+      <variable name="b" type="int" value="1978"/>
+    </condition>
+  </complexRule>
+</ruleset>

@@ -1,0 +1,41 @@
+// ComMetaParserTest1.idl : IDL source for ComMetaParserTest1.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (ComMetaParserTest1.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	[
+		object,
+		uuid(1A58C0B2-2D6F-4CAE-9020-4456A43656AF),
+	
+		helpstring("IMyMetaParserTest1 Interface"),
+		pointer_default(unique)
+	]
+	interface IMyMetaParserTest1 : IUnknown
+	{
+		[helpstring("method Parse")] HRESULT Parse([in] VARIANT xmlSource, [out, retval] VARIANT_BOOL *isSuccessful);
+		[helpstring("method Process")] HRESULT Process([out, retval] VARIANT_BOOL *isSuccessful);
+		[helpstring("method Init")] HRESULT Init();
+	};
+
+[
+	uuid(69F38ED9-E3AA-4DEC-8B9B-20CD2776F8D0),
+	version(1.0),
+	helpstring("ComMetaParserTest1 1.0 Type Library")
+]
+library COMMETAPARSERTEST1Lib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(924FA4EA-63D7-46A4-9AAD-0B7D61FD2F79),
+		helpstring("MyMetaParserTest1 Class")
+	]
+	coclass MyMetaParserTest1
+	{
+		[default] interface IMyMetaParserTest1;
+	};
+};

@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		{7BBB1C6D-2F11-41CF-9F88-5E57159798EC} = s 'ComMetaParserTest1'
+		'ComMetaParserTest1.EXE'
+		{
+			val AppID = s {7BBB1C6D-2F11-41CF-9F88-5E57159798EC}
+		}
+	}
+}

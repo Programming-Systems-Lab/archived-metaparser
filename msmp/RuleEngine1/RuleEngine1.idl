@@ -1,0 +1,40 @@
+// RuleEngine1.idl : IDL source for RuleEngine1.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (RuleEngine1.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	[
+		object,
+		uuid(26E2C9EB-E8F4-4340-8E31-9E80666407DD),
+	
+		helpstring("IMyRuleEngine1 Interface"),
+		pointer_default(unique)
+	]
+	interface IMyRuleEngine1 : IUnknown
+	{
+		[helpstring("method CompileRule")] HRESULT CompileRule([in] VARIANT xmlSource, [out, retval] VARIANT_BOOL *isSuccessful);
+		[helpstring("method Process")] HRESULT Process([in] IUnknown* pDoc, [out, retval] VARIANT_BOOL* isSuccessful);
+	};
+
+[
+	uuid(DAA92AED-B03C-46F6-AC4D-49FE49F59827),
+	version(1.0),
+	helpstring("RuleEngine1 1.0 Type Library")
+]
+library RULEENGINE1Lib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(A82F0487-A246-4BF1-A9D7-DB87A087155B),
+		helpstring("MyRuleEngine1 Class")
+	]
+	coclass MyRuleEngine1
+	{
+		[default] interface IMyRuleEngine1;
+	};
+};

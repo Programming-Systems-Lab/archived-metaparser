@@ -1,0 +1,23 @@
+HKCR
+{
+	ComMetaParserTest1.MyMetaParserTest1.1 = s 'MyMetaParserTest1 Class'
+	{
+		CLSID = s '{924FA4EA-63D7-46A4-9AAD-0B7D61FD2F79}'
+	}
+	ComMetaParserTest1.MyMetaParserTest1 = s 'MyMetaParserTest1 Class'
+	{
+		CLSID = s '{924FA4EA-63D7-46A4-9AAD-0B7D61FD2F79}'
+		CurVer = s 'ComMetaParserTest1.MyMetaParserTest1.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {924FA4EA-63D7-46A4-9AAD-0B7D61FD2F79} = s 'MyMetaParserTest1 Class'
+		{
+			ProgID = s 'ComMetaParserTest1.MyMetaParserTest1.1'
+			VersionIndependentProgID = s 'ComMetaParserTest1.MyMetaParserTest1'
+			LocalServer32 = s '%MODULE%'
+			val AppID = s '{7BBB1C6D-2F11-41CF-9F88-5E57159798EC}'
+			'TypeLib' = s '{69F38ED9-E3AA-4DEC-8B9B-20CD2776F8D0}'
+		}
+	}
+}

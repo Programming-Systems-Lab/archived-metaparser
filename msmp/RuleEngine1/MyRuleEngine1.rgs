@@ -1,0 +1,25 @@
+HKCR
+{
+	RuleEngine1.MyRuleEngine1.1 = s 'MyRuleEngine1 Class'
+	{
+		CLSID = s '{A82F0487-A246-4BF1-A9D7-DB87A087155B}'
+	}
+	RuleEngine1.MyRuleEngine1 = s 'MyRuleEngine1 Class'
+	{
+		CLSID = s '{A82F0487-A246-4BF1-A9D7-DB87A087155B}'
+		CurVer = s 'RuleEngine1.MyRuleEngine1.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {A82F0487-A246-4BF1-A9D7-DB87A087155B} = s 'MyRuleEngine1 Class'
+		{
+			ProgID = s 'RuleEngine1.MyRuleEngine1.1'
+			VersionIndependentProgID = s 'RuleEngine1.MyRuleEngine1'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{DAA92AED-B03C-46F6-AC4D-49FE49F59827}'
+		}
+	}
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<Library xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation=
+                   "http://www.book.org
+                    Book.xsd
+                    http://www.employee.org
+                    Employee.xsd">
+    <Books>
+        <Book xmlns="http://www.book.org">
+                <Title>My Life and Times</Title>
+                <Author>Paul McCartney</Author>
+                <Date>1998</Date>
+                <ISBN>1-56592-235-2</ISBN>
+                <Publisher>McMillin Publishing</Publisher>
+        </Book>
+        <Book xmlns="http://www.book.org">
+                <Title>Illusions The Adventures of a Reluctant Messiah</Title>
+                <Author>Richard Bach</Author>
+                <Date>1977</Date>
+                <ISBN>0-440-34319-4</ISBN>
+                <Publisher>Dell Publishing Co.</Publisher>
+        </Book>
+        <Book xmlns="http://www.book.org">
+                <Title>The First and Last Freedom</Title>
+                <Author>J. Krishnamurti</Author>
+                <Date>1954</Date>
+                <ISBN>0-06-064831-7</ISBN>
+                <Publisher>Harper &amp; Row</Publisher>
+        </Book>
+    </Books>    
+    <Employees>
+        <Employee xmlns="http://www.employee.org">
+            <Name>John Doe</Name>
+            <SSN>123-45-6789</SSN>
+        </Employee>
+        <Employee xmlns="http://www.employee.org">
+            <Name>Sally Smith</Name>
+            <SSN>000-11-2345</SSN>
+        </Employee>
+    </Employees>
+</Library>

@@ -1,0 +1,39 @@
+// Client2.idl : IDL source for Client2.dll
+//
+
+// This file will be processed by the MIDL tool to
+// produce the type library (Client2.tlb) and marshalling code.
+
+import "oaidl.idl";
+import "ocidl.idl";
+	[
+		object,
+		uuid(4C31E4AC-A5B3-470F-99D5-00F9AD99B811),
+	
+		helpstring("IMyREClient2 Interface"),
+		pointer_default(unique)
+	]
+	interface IMyREClient2 : IUnknown
+	{
+		[helpstring("method Process")] HRESULT Process();
+	};
+
+[
+	uuid(6A964770-CE9F-4223-83E4-400307088D2F),
+	version(1.0),
+	helpstring("Client2 1.0 Type Library")
+]
+library CLIENT2Lib
+{
+	importlib("stdole32.tlb");
+	importlib("stdole2.tlb");
+
+	[
+		uuid(68845DD2-120D-4E6F-9723-43579ADC6282),
+		helpstring("MyREClient2 Class")
+	]
+	coclass MyREClient2
+	{
+		[default] interface IMyREClient2;
+	};
+};

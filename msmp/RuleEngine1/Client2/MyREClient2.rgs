@@ -1,0 +1,24 @@
+HKCR
+{
+	Client2.MyREClient2.1 = s 'MyREClient2 Class'
+	{
+		CLSID = s '{68845DD2-120D-4E6F-9723-43579ADC6282}'
+	}
+	Client2.MyREClient2 = s 'MyREClient2 Class'
+	{
+		CLSID = s '{68845DD2-120D-4E6F-9723-43579ADC6282}'
+		CurVer = s 'Client2.MyREClient2.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {68845DD2-120D-4E6F-9723-43579ADC6282} = s 'MyREClient2 Class'
+		{
+			ProgID = s 'Client2.MyREClient2.1'
+			VersionIndependentProgID = s 'Client2.MyREClient2'
+			InprocServer32 = s '%MODULE%'
+			{
+			}
+			'TypeLib' = s '{6A964770-CE9F-4223-83E4-400307088D2F}'
+		}
+	}
+}
