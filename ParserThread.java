@@ -4,7 +4,7 @@ import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 import org.apache.xerces.parsers.*;
 
-import psl.worklets.*;
+// import psl.worklets.*;
 import psl.codetransfer.*;
 import psl.kx.*;
 
@@ -20,7 +20,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.13  2001-11-14 04:43:55  valetto
+  * Revision 2.14  2004-03-25 19:41:06  janak
+  * Removed unused worklets dependency
+  *
+  * Revision 2.13  2001/11/14 04:43:55  valetto
   * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
   * Also, substantially cleaned up code.
   *
