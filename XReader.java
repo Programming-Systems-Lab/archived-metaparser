@@ -5,7 +5,7 @@ import oracle.xml.parser.schema.*;
 class XReader {
 
   BufferedReader br = null;
-  PipedOutputStream pos = null;
+  PipedWriter pos = null;
   int curLine = 0;
   int curCol = 0;
   String buf = null;
@@ -21,17 +21,17 @@ class XReader {
   public void setElement(String e) {element = e;}
   public String getElement() {return element;}
 
-  XReader(Reader r, PipedOutputStream o, XMLSchema s, String inst) 
+  XReader(Reader r, PipedWriter o, XMLSchema s, String inst) 
     throws IOException {
     try {
       br = new BufferedReader(r);
       sp = new SubParser(o, s, inst);
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in XReader constructor 1");
+      System.err.println(instance + "Error in XReader constructor 1");
       throw ioe;
     }
 
-    instance = inst;
+    instance = inst + " XR:";
     pos = o;
     curLine = 0;
     curCol = 1;
@@ -40,13 +40,13 @@ class XReader {
     t.start();
   }
 
-  XReader(Reader r, PipedOutputStream o, XMLSchema s, String inst, Locator l) 
+  XReader(Reader r, PipedWriter o, XMLSchema s, String inst, Locator l) 
     throws IOException {
     try {
       br = new BufferedReader(r);
       sp = new SubParser(o, s, inst);
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in XReader constructor 2.1");
+      System.err.println(instance + "Error in XReader constructor 2.1");
       throw ioe;
     }
 
@@ -56,8 +56,8 @@ class XReader {
 
     skip(l);
 
-    System.out.println(instance + "XReader buffer:" + buf);
-    System.out.println(instance + "XReader(" + curCol + "):" 
+    System.err.println(instance + "XReader buffer:" + buf);
+    System.err.println(instance + "XReader(" + curCol + "):" 
     	+ buf.substring(curCol-1));
 
     Thread t = new Thread(sp);
@@ -65,6 +65,7 @@ class XReader {
   }
 
   void skip(Locator l) throws IOException {
+    System.err.println(instance + "skip(" + Metaparser.printLoc(l) + ")");
     int tgtLine = l.getLineNumber();
     try {
       while (curLine < tgtLine) {
@@ -72,7 +73,7 @@ class XReader {
 	curLine++;
       }
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in XReader constructor 2.2");
+      System.err.println(instance + "Error in skip");
       throw ioe;
     }
 
@@ -83,9 +84,9 @@ class XReader {
   void send(String s) throws IOException {
     try {
       System.err.println(instance + "sending:" + s);
-      pos.write(s.getBytes());
+      pos.write(s);
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in send");
+      System.err.println(instance + "Error in send");
       throw ioe;
     }
   }
@@ -101,13 +102,13 @@ class XReader {
         if (buf != null) {
 	  String s = buf.substring(curCol-1);
 	  System.err.println(instance + "flushing:" + s);
-	  pos.write(s.getBytes());
+	  pos.write(s);
 	}
 	curCol = 1;
 	while (tgtLine > curLine+1) {
 	  buf = br.readLine();
 	  System.err.println(instance + "flushing:" + buf);
-	  pos.write(buf.getBytes());
+	  pos.write(buf);
 	  curLine++;
 	}
 	buf = br.readLine();
@@ -118,26 +119,27 @@ class XReader {
       if (buf != null) {
         String s =buf.substring(curCol-1, tgtCol-1);
 	System.err.println(instance + "flushing:" + s);
-	pos.write(s.getBytes());
+	pos.write(s);
       }
       curCol = tgtCol;
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in flush");
+      System.err.println(instance + "Error in flush");
       throw ioe;
     }
   }
 
   void close(boolean flush) throws IOException {
+    System.err.println(instance + "closing(" + flush + ")");
     try {
       if (flush) {
 	String s = buf.substring(curCol-1);
 	System.err.println(instance + "flushing:" + s);
-	pos.write(s.getBytes());
+	pos.write(s);
       }
       br.close();
       pos.close();
     } catch (IOException ioe) {
-      System.out.println(instance + "Error in close");
+      System.err.println(instance + "Error in close");
       throw ioe;
     }
   }

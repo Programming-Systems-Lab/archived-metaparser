@@ -12,27 +12,27 @@ public class SubParser extends DefaultHandler implements Runnable {
   Locator locator;
   int depth = 0;
   static final String spc = "  ";
-  PipedInputStream pis = null;
+  PipedReader pis = null;
   XMLSchema schema = null;
   String instance = "";
 
-  SubParser(PipedOutputStream pos, XMLSchema s, String inst) 
+  SubParser(PipedWriter pos, XMLSchema s, String inst) 
   	throws IOException {
     instance = inst;
     schema = s;
     try {
-      pis = new PipedInputStream(pos);
+      pis = new PipedReader(pos);
     } catch (IOException ioe) {
-      printMsg("Error creating PipedInputStream:" + ioe);
+      printMsg("Error creating PipedReader:" + ioe);
       throw ioe;
     }
   }
 
   public void printMsg(String m) {
     for (int i = 0; i < depth; ++i) {
-      System.out.print(spc);
+      System.err.print(spc);
     }
-    System.out.println(instance + ": " + m);
+    System.err.println(instance + ": " + m);
   }
 
   public String printLoc() {
