@@ -24,7 +24,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.10  2001-04-18 19:55:18  png3
+  * Revision 2.11  2001-04-18 20:12:29  png3
+  * synchronization III: insertion of null object unnecessary and removed
+  *
+  * Revision 2.10  2001/04/18 19:55:18  png3
   * fixed idiot error (program is unlikely to loop if there's no while statement...)
   *
   * Revision 2.9  2001/04/18 19:49:50  png3
@@ -177,7 +180,6 @@ class ParserThread extends DefaultHandler
 	  } else {
 	    // Object lockObj = new Object();
 	    //_wklArrivals.put(requestID, lockObj);
-	    _wklArrivals.put(requestID, null);
 	    prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
 	    Date d = null;
 	    while (true) {
