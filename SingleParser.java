@@ -155,7 +155,7 @@ class SingleParser implements ContentHandler, Runnable {
             parser.setContentHandler ( this );
             parser.setErrorHandler ( errorHandler );
         } catch ( org.xml.sax.SAXException saxe ) {
-            System.err.println ( "Cannot create parser" );
+            appendLog ( "Cannot create parser" );
         }	
     }
     
@@ -177,10 +177,10 @@ class SingleParser implements ContentHandler, Runnable {
 	try {
             parser.parse ( new InputSource ( reader ) );
         } catch ( org.xml.sax.SAXException saxe ) {
-            System.err.println ( saxe.toString () );
+            appendLog ( saxe.toString () );
 	    saxe.printStackTrace ();
         } catch ( java.io.IOException ioe ) {
-            System.err.println ( "Cannot read from source" );
+            appendLog ( "Cannot read from source" );
         }
 
     } 
@@ -189,15 +189,15 @@ class SingleParser implements ContentHandler, Runnable {
 	File dest = null;
 	try {
 	    if ( ( dest = new File (fileName) ).createNewFile () )
-		System.err.println ( "create file: " + dest.toString () );
+		appendLog ( "create file: " + dest.toString () );
 	    if ( !( (dest.exists () ) && ( dest.canWrite () ) ) ) {
-		System.err.println ( "Cannot save file " + fileName );
+		appendLog ( "Cannot save file " + fileName );
 		return;
 	    }
 	    fw = new FileWriter( dest.toString () );
 	    pw = new PrintWriter ( fw );
 	} catch ( IOException ioe ) {
-	    System.err.println ( "IO Exception" );
+	    appendLog ( "IO Exception" );
 	    pw = null;
 	}
     }
@@ -211,12 +211,12 @@ class SingleParser implements ContentHandler, Runnable {
     }
     
     public void setDocumentLocator ( Locator locator ) {
-	System.err.println ( "  * setDocumentLocator() Called" );
+	appendLog ( "  * setDocumentLocator() Called" );
 	this.locator = locator;
     }
     
     public void startDocument () throws SAXException {
-	System.err.println ( "Parsing begins..." );
+	appendLog ( "Parsing begins..." );
 	this.output = new Document ( new Element ( "Dummy" ) );
 	this.current = null;
 	if ( generateTree ) {
@@ -227,11 +227,11 @@ class SingleParser implements ContentHandler, Runnable {
     }
     
     public void endDocument () throws SAXException {
-	System.err.println ( "...Parsing ends." );
+	appendLog ( "...Parsing ends." );
 	if ( pw != null ) {
 	    pw.close ();
 	} else
-	    System.err.println ( "No output" );
+	    appendLog ( "No output" );
 	
 	if ( generateOutput ) {
 	    XMLOutputter outputter = new XMLOutputter ();
@@ -240,28 +240,29 @@ class SingleParser implements ContentHandler, Runnable {
 				   new FileOutputStream ( srcID + 
 							  "_output.xml" ) );
 	    } catch ( java.io.IOException ioe ) {
-		System.err.println ( "IO Exception" );
+		appendLog ( "IO Exception" );
 	    }
 	}
 	if ( generateTree ) {
 	    if ( root == null ) 
-		System.err.println ( "Empty root" );
+		appendLog ( "Empty root" );
 	    try {
 		new TreeViewer ( root );
 	    } catch ( Error e ) {
-		System.err.println ( "To see the output visually, " +
+		appendLog ( "To see the output visually, " +
 				     "open an X-server." );
 	    } catch ( Exception e ) {
-		System.err.println ( "To see the output visually, " +
+		appendLog ( "To see the output visually, " +
                                      "open an X-server." );
             }
 	}
+	mp.dispatch ( new MetaparserParsedTree ( srcID, root ) );
 	suicide ();
     }
     
     public void processingInstruction ( String target, String data ) 
 	throws SAXException {
-	System.err.println ( "PI: Target: " + target + " and Data: " + data );
+	appendLog ( "PI: Target: " + target + " and Data: " + data );
 	if ( pw != null ) {
 	    pw.println ( "<?" + target + " " + data + "?>" );
 	}
@@ -273,7 +274,7 @@ class SingleParser implements ContentHandler, Runnable {
     }
     
     public void startPrefixMapping ( String prefix, String uri ) {
-	//System.err.println ( "Mapping starts for prefix " + 
+	//appendLog ( "Mapping starts for prefix " + 
 	//		     prefix + " mapped to URI " + uri );
 	if ( pw != null ) {
 	    String temp = "xmlns";
@@ -286,7 +287,7 @@ class SingleParser implements ContentHandler, Runnable {
     }
     
     public void endPrefixMapping ( String prefix ) {
-	//System.err.println ( "Mapping ends for prefix " + prefix );
+	//appendLog ( "Mapping ends for prefix " + prefix );
 	if ( pw != null ) {
 	    // pw.println ( "End prefix mapping: " + prefix );
 	}
@@ -316,14 +317,14 @@ class SingleParser implements ContentHandler, Runnable {
 	    currentReply = ( SchemaFragment )existingTag.data;
 	    return;
 	} catch ( java.lang.ClassCastException cce ) {
-	    System.err.println ( "Unknown error occurred due to class " +
+	    appendLog ( "Unknown error occurred due to class " +
 				 "cast exception." );
 	    currentReply = null;
 	    return;
 	} catch ( psl.wgcache.exception.WGCException wgce ) {
 	    // No results from cache, so query Oracle instead
 	} catch ( java.lang.NullPointerException npe ) {
-	    System.err.println ( "Cache returns null" );
+	    appendLog ( "Cache returns null" );
 	}
 	
 	String newQuery = ( srcID + "," );
@@ -341,28 +342,28 @@ class SingleParser implements ContentHandler, Runnable {
 	//	    try {
 	//		Thread.sleep ( 10 );
 	//	    } catch ( java.lang.InterruptedException ie ) {
-	//		System.err.println ( "Interrupted" );
+	//		appendLog ( "Interrupted" );
 	//	    }
 	//	}
 	
 	try {
 	    currentReply = oracle.getFragment ( newQuery );
 	} catch ( psl.oracle.exceptions.UnknownTagException ute ) {
-	    System.err.println ( "Tag Unknown." );
+	    appendLog ( "Tag Unknown." );
 	} catch ( psl.oracle.exceptions.InvalidQueryFormatException iqfe ) {
-	    System.err.println ( "Invalid Query Format Exception." );
+	    appendLog ( "Invalid Query Format Exception." );
 	} catch ( psl.oracle.exceptions.InvalidSchemaFormatException isfe ) {
-	    System.err.println ( "Invalid Schema Format Exception." );
+	    appendLog ( "Invalid Schema Format Exception." );
 	}
 	
 	if ( null == currentReply ||
 	     !waitingTag.equals ( currentReply.getName () ) ) {
-	    // System.err.println ( "Reply doesn't match query" );
+	    // appendLog ( "Reply doesn't match query" );
 	    if ( null == currentReply )
-		System.err.println ( "Null reply" );
+		appendLog ( "Null reply" );
 	    else {
-		System.err.println ( "Waiting Tag: " + waitingTag );
-		System.err.println ( "Current Reply: " + 
+		appendLog ( "Waiting Tag: " + waitingTag );
+		appendLog ( "Current Reply: " + 
 				     currentReply.getName () );
 	    }
 	    // throw new SAXException ( "Reply doesn't match query" );
@@ -392,15 +393,15 @@ class SingleParser implements ContentHandler, Runnable {
 			.newInstance ();
                     modulePool.put ( moduleName, currentModule );
                 } catch ( java.lang.ClassNotFoundException cnfe ) {
-                    System.err.println ( "Cannot initialize module: " +
+                    appendLog ( "Cannot initialize module: " +
                                          moduleName );
 		    return null;
                 } catch ( java.lang.InstantiationException ie ) {
-                    System.err.println ( "Cannot initialize module: " +
+                    appendLog ( "Cannot initialize module: " +
                                          moduleName );
                     return null;
 		} catch ( java.lang.IllegalAccessException iae ) {
-                    System.err.println ( "Cannot initialize module: " +
+                    appendLog ( "Cannot initialize module: " +
                                          moduleName );
                     return null;
 		}		    
@@ -411,15 +412,15 @@ class SingleParser implements ContentHandler, Runnable {
 		    ( IMetaparserModule )Class.forName ( moduleName )
 		    .newInstance ();
             } catch ( java.lang.ClassNotFoundException cnfe ) {
-                System.err.println ( "Cannot initialize module: " +
+                appendLog ( "Cannot initialize module: " +
                                      moduleName );
 		return null;
             } catch ( java.lang.InstantiationException ie ) {
-		System.err.println ( "Cannot initialize module: " +
+		appendLog ( "Cannot initialize module: " +
 				     moduleName );
 		return null;
 	    } catch ( java.lang.IllegalAccessException iae ) {
-		System.err.println ( "Cannot initialize module: " +
+		appendLog ( "Cannot initialize module: " +
 				     moduleName );
 		return null;
 	    }
@@ -447,13 +448,12 @@ class SingleParser implements ContentHandler, Runnable {
 	if ( currentReply != null ) {
 	    // Start validating with the schema fragment 
 	    // contained in currentReply
-	    System.err.println
-		( "\nParsing with the following Schema Fragment:" );
-	    System.err.println ( currentReply.toString () + "\n" );
-	    System.err.println ( "***********************************\n" );
+	    appendLog ( "\nParsing with the following Schema Fragment:" );
+	    appendLog ( currentReply.toString () + "\n" );
+	    appendLog ( "***********************************\n" );
 	    // End of validation
 	} else {
-	    System.err.println ( "Proper schema fragment not found: " +
+	    appendLog ( "Proper schema fragment not found: " +
 				 namespaceURI + "/" + localName );
 	}
     
@@ -471,7 +471,7 @@ class SingleParser implements ContentHandler, Runnable {
 	// Start parsing
 	String temp = "";
 	String tempNode = "";
-	System.err.println ( "startElement: " + localName );
+	appendLog ( "startElement: " + localName );
 	if ( pw != null ) {
 	    for ( int i = 0; i < level; i ++ )
 		pw.print ( "  " );
@@ -508,16 +508,16 @@ class SingleParser implements ContentHandler, Runnable {
 	
 	/*
 	if ( !namespaceURI.equals ( "" ) ) {
-	    System.err.println ( " in namespace " + 
+	    appendLog ( " in namespace " + 
 				 namespaceURI + " (" + rawName + ")" );
 	} else {
-	    System.err.println ( " has no associated namespace." );
+	    appendLog ( " has no associated namespace." );
 	}
 	*/
 	
 	for  ( int i = 0; i < atts.getLength (); i ++ ) {
 	    /*
-	      System.err.println ( "Attributes: " + atts.getLocalName ( i ) + 
+	      appendLog ( "Attributes: " + atts.getLocalName ( i ) + 
 	      "*" + atts.getValue ( i ) );
 	    */
 	    temp = ( " " + atts.getRawName ( i ) + "=\"" + 
@@ -558,7 +558,7 @@ class SingleParser implements ContentHandler, Runnable {
 	throws SAXException {
 	
 	
-	System.err.println ( "endElement: " + localName + "\n" );
+	appendLog ( "endElement: " + localName + "\n" );
 	path = path.substring ( 0, path.length () - localName.length () - 1 );
 
         queryTag ( namespaceURI, localName );
@@ -592,8 +592,7 @@ class SingleParser implements ContentHandler, Runnable {
 	    String chunk = 
 		allContents.substring ( currentTag.getStartIndex (),
 					index );
-	    System.err.println 
-		( "Parsing:\n" + chunk );
+	    appendLog ( "Parsing:\n" + chunk );
 	    try {
 		// validating current chunk
 		if ( validate ( chunk ) ) {
@@ -629,7 +628,7 @@ class SingleParser implements ContentHandler, Runnable {
 	    } catch ( org.jdom.NoSuchAttributeException nsae ) {
 	    }
 	} catch ( StringIndexOutOfBoundsException sioobe ) {
-	    System.err.println ( "String Index Out of Bounds" );
+	    appendLog ( "String Index Out of Bounds" );
 	}
 	if ( stack.empty () )
 	    current = null;
@@ -638,7 +637,7 @@ class SingleParser implements ContentHandler, Runnable {
 	if ( currentTag.getContent ().getName ().equals ( localName ) &&
 	     currentTag.getContent ().getNamespaceURI ()
 	     .equals ( namespaceURI ) ) {
-	    System.err.println ( "***********************************\n" );
+	    appendLog ( "***********************************\n" );
 	    Vector data = currentTag.getData ();
 	    int count = data.size ();
 	    for ( int i = 0; i < count; i ++ ) {
@@ -651,8 +650,8 @@ class SingleParser implements ContentHandler, Runnable {
 	    }
 	    currentTag.removeData ();
 	} else {
-	    System.err.println ( "Error nested tag: " + rawName );
-	    System.err.println ( currentTag.getTagName () );
+	    appendLog ( "Error nested tag: " + rawName );
+	    appendLog ( currentTag.getTagName () );
 	}
 	if ( generateTree ) {
 	    try {
@@ -670,7 +669,7 @@ class SingleParser implements ContentHandler, Runnable {
 	throws SAXException {
 	String s = 
 	    ( new String ( ch, start, end ) ).replace ( '\n', ' ' ).trim ();
-	//System.err.println ( "characters: " + s );
+	//appendLog ( "characters: " + s );
 	
 	if (  ( pw != null ) && ( s.length () != 0 ) )
 	    for ( int i = 0; i < level; i ++ )
@@ -694,13 +693,13 @@ class SingleParser implements ContentHandler, Runnable {
     public void ignorableWhitespace ( char[] ch, int start, int end )
 	throws SAXException {
 	String s = new String ( ch, start, end );
-	//System.err.println ( "ignorableWhitespace: [" + s + "]" );
+	//appendLog ( "ignorableWhitespace: [" + s + "]" );
 	//if (  ( pw != null ) && ( s.trim ().length () != 0 ) )
 	//  pw.print ( s );
     }
     
     public void skippedEntity ( String name ) throws SAXException {
-	//System.err.println ( "skippedEntity: " + name );
+	//appendLog ( "skippedEntity: " + name );
 	if ( pw != null )
 	    pw.print ( "&" + name + ";" );
     }
@@ -718,8 +717,12 @@ class SingleParser implements ContentHandler, Runnable {
     }
     
     private synchronized void suicide () {
-	this.parser = null;
+	this.reset ();
 	mp.killSingleParser ( this.srcID );
+    }
+
+    private synchronized void appendLog ( String newLog ) {
+	mp.appendLog ( this.srcID + ": " + newLog );
     }
 
     /**

@@ -94,9 +94,7 @@ public class Metaparser {
      * @param newQuery Content of new query.
      */
     public void queryTag ( String newQuery ) {
-	System.err.println ( "Sending query" );
 	ms.setNewOracleQuery ( newQuery );
-	System.err.println ( "Sent" );
 	return;
     }
     
@@ -109,7 +107,7 @@ public class Metaparser {
      */
     public void processOracleReply ( SchemaFragment oracleReply ) {
 	long srcID = oracleReply.getSrcID ();
-	System.err.println ( "Process reply for source: " + srcID );
+	// System.err.println ( "Process reply for source: " + srcID );
 	try {
 	    SingleParser parser = 
 		( SingleParser )parserList.get ( new Long ( srcID ) );
@@ -155,7 +153,7 @@ public class Metaparser {
 	parser = ( SingleParser )parserList.get ( new Long ( srcID ) );
 	if ( null == parser ) {
 	    // Create a new parser to parse smart event from this source
-	    System.err.println ( "Create new parser" );
+	    System.err.println ( "Create new parser: " + srcID );
 	    parser = new SingleParser ( srcID, this );
 	    parserList.put ( new Long ( srcID ), parser );
 	    new Thread ( parser ).start ();
@@ -165,7 +163,7 @@ public class Metaparser {
 	if ( content.length () > 0 ) {
 	    parser.processSmartEvent ( content );
 	} else 
-	    System.err.println ( "Warning: Empty smart event" );
+	    // System.err.println ( "Warning: Empty smart event" );
 	
 	try {
 	    boolean finished = 
@@ -194,9 +192,12 @@ public class Metaparser {
 	return this.oracle;
     }
     
+    synchronized void appendLog ( String newLog ) {
+	ms.appendLog ( newLog );
+    }
+
+    synchronized void dispatch ( MetaparserParsedTree parsedTree ) {
+	ms.dispatch ( parsedTree );
+    }
+    
 }
-
-
-
-
-

@@ -27,8 +27,12 @@ public class MetaparserService implements GroupspaceService,
 
     // Name(s) of event(s) this service will send out.
     private static final int METAPARSER_EVENT = 0;
+    private static final int METAPARSER_LOG = 1;
+    private static final int METAPARSER_RESULT = 2;
     private static String[] thisEventName 
-	= { "MetaparserEvent" };
+	= { "MetaparserEvent",
+	    "MetaparserLog",
+	    "MetaparserResult" };
     
     // Name(s) of event(s) this service will subscribe to.
     private static int SUBSCRIBE_ORACLE_EVENT = 0;
@@ -170,9 +174,35 @@ public class MetaparserService implements GroupspaceService,
 	    } catch ( PropertyVetoException pve ) {
 		System.err.println ( "New Query Vetoed." );
 	    } catch ( java.lang.NullPointerException npe ) {
-		System.err.println ( "Here" );
 		npe.printStackTrace ();
 	    }
+	}
+    }
+    
+    synchronized void appendLog ( String newLog ) {
+	try {
+	    GroupspaceEvent ge =
+		new GroupspaceEvent ( newLog, thisEventName[METAPARSER_LOG],
+				      null, newLog, true );
+	    gc.groupspaceEvent ( ge );
+	} catch ( PropertyVetoException pve ) {
+	    System.err.println ( "Append Log Vetoed." );
+	} catch ( java.lang.NullPointerException npe ) {
+	    npe.printStackTrace ();
+	} 
+    }
+    
+    synchronized void dispatch ( MetaparserParsedTree result ) {
+	try {
+	    GroupspaceEvent ge =
+		new GroupspaceEvent ( result, 
+				      thisEventName[METAPARSER_RESULT],
+				      null, result, true );
+	    gc.groupspaceEvent ( ge );
+	} catch ( PropertyVetoException npe ) {
+	    System.err.println ( "Dispatch Result Vetod." );
+	} catch ( java.lang.NullPointerException npe ) {
+	    npe.printStackTrace ();
 	}
     }
     
