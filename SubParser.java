@@ -10,7 +10,11 @@ import java.util.*;
 /** Validating subordinate parser thread.
   *
   * $Log$
-  * Revision 2.6  2001-06-02 19:35:33  png3
+  * Revision 2.7  2001-11-14 04:43:55  valetto
+  * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
+  * Also, substantially cleaned up code.
+  *
+  * Revision 2.6  2001/06/02 19:35:33  png3
   * various pre-demo tweaks
   *
   * Revision 2.5  2001/02/05 06:35:16  png3
@@ -176,6 +180,7 @@ public class SubParser extends DefaultHandler implements Runnable {
   public void processingInstruction(String target, String data)
           throws SAXException {
 
+	String currentHint = null;
     final String fn = inst+"_SP_PI: ";
 
     v.prDbg(fn+"ProcessingInstruction:" + target + " " + data);
@@ -200,6 +205,13 @@ public class SubParser extends DefaultHandler implements Runnable {
 	      --depth;
 	    }
 	  }
+	  else if (piaName.toLowerCase().equals("microhint")) { // added to handle hint to micro-Oracle
+	  	currentHint = piaVal.toLowerCase();
+	  	++depth;
+	    v.prDbg(fn+"*** found Oracle hint: " + currentHint + " ***");
+	    --depth;
+	}
+	
 	}
       }
       depth -= 2;

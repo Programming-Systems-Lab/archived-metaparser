@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<smartevent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="SmartEventSchema.xsd">
+	<tag>25</tag>
+	<source>
+		<ipAddr>128.59.23.6</ipAddr>
+		<ipPort>0</ipPort>
+	</source>
+	<time>1004547955964</time>
+	<?FleXML type="schemaFrag" name="event" version="1.0" microhint="schema"?>
+	<event>
+		<packager value="null"/>
+		<timestamp value="1004547955854"/>
+		<parameters>
+			<callback type="before"/>
+			<object value="edu.isi.dasher.service.SystemJobPool@ec436"/>
+			<class name="edu.isi.dasher.service.SystemJobPool"/>
+			<method name="jobReported(JobReportEvent)"/>
+			<parameters>
+				<param type="edu.isi.dasher.service.event.JobStatusEvent" value="Wed Oct 31 12:05:55 EST 2001"/>
+				<SERVICE_DYNAMICS>
+					<Service>SearchEngineWrapper(JobNumber=128.59.23.6:1004547955824)</Service>
+					<Status>Running</Status>
+					<Progress>66</Progress>
+				</SERVICE_DYNAMICS>
+			</parameters>
+		</parameters>
+	</event>
+</smartevent>

@@ -4,6 +4,9 @@ import java.text.DateFormat;
 import java.util.*;
 import java.io.*;
 import java.net.URL;
+import java.net.MalformedURLException;
+import java.net.HttpURLConnection;
+import siena.*;
 
 // import oracle.xml.parser.schema.*;
 // import oracle.xml.parser.v2.*;
@@ -13,7 +16,11 @@ import org.xml.sax.helpers.*;
 /** Various static utility methods for metaparser.
   *
   * $Log$
-  * Revision 2.5  2001-04-18 19:49:50  png3
+  * Revision 2.6  2001-11-14 04:43:55  valetto
+  * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
+  * Also, substantially cleaned up code.
+  *
+  * Revision 2.5  2001/04/18 19:49:50  png3
   * modified synchronization method for worklet arrival.  I thought incorrectly
   * that wait()-ing on an object released _all_ of its locks
   *
@@ -51,69 +58,17 @@ class MPUtil {
     return ("(" + l.getLineNumber() + ":" 
     	+ l.getColumnNumber() + ")");
   }
+ 
+  public static String extractModuleNameFromEvent (Notification n) {
+  		AttributeValue attr = n.getAttribute("TPModule");
+  		return attr.stringValue();
+	}
 
-  /** pulls module name out of oracle response XML */
-  // TODO: integrate with other logging...
-  public static String extractModuleName(String s) {
-    final String fn = "MPU_extractModuleName: ";
-    final String startTag = "<module";
-    final String endTok = "</module>";
-    int startIdx = s.indexOf(startTag);
-    startIdx = s.indexOf(">", startIdx);
-    int endIdx = s.indexOf(endTok, startIdx);
-    String result = s.substring(startIdx + 1, endIdx);
-    System.err.println(fn+"Expected Module Name:\n" + result);
-    return result;
-  }
-
-  /** pulls subschema out of oracle response XML */
-  // TODO: integrate with other logging...
-  public static void extractSchema(String s) {
-    final String fn = "MPU_extractSchema: ";
-    final String startTag = "<subschema>";
-    final String endTag = "</subschema>";
-    int startIdx = s.indexOf(startTag)+startTag.length();
-    int endIdx = s.indexOf(endTag, startIdx);
-    String result = s.substring(startIdx, endIdx);
-    System.err.println(fn+"extracted schema String:\n" + result);
-
-    // StringReader sr = new StringReader(result);
-    // XMLSchema schema = null;
-    try {
-      FileWriter schema = new FileWriter("schema.xsd");
-      schema.write(result);
-      schema.close();
-      // URL base = new URL("http://www.w3.org/1999/XMLSchema-instance");
-      // XSDBuilder b = new XSDBuilder();
-      // schema = (XMLSchema)b.build(sr, base);
-    } catch (Exception e) {
-      System.err.println(fn+"error while building schema");
-      System.err.println(e);
-      return;
-    }
-  }
-
-  // got this from Oracle, but I think it's been superseded
-  // by the built-in toURL() method of File
-  /*
-  static URL fileToURL(String fname) {
-
-    File file = new File(fname);
-
-    String path = file.getAbsolutePath();
-    String fSep = System.getProperty("file.separator");
-
-    if ((fSep != null) && (fSep.length() == 1)) {
-      path = path.replace(fSep.charAt(0), '/');
-    }
-    if ((path.length() > 0) && (path.charAt(0) != '/')) {
-      path = '/' + path;
-    }
-    try {
-      return new URL("file", null, path);
-    } catch (java.net.MalformedURLException e) {
-      throw new Error("unexpected MalformedURLException");
-    }
-  }
-  */
+	public static String extractSchemaURLFromEvent (Notification n) {
+		String schemaURLValue;
+		AttributeValue attr = n.getAttribute("Value");
+    	schemaURLValue = attr.stringValue();
+    	return schemaURLValue;
+	}
+	 
 }

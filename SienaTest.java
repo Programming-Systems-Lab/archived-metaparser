@@ -12,7 +12,11 @@ import siena.*;
   * One argument: xml message to include.
   *
   * $Log$
-  * Revision 2.5  2001-04-18 19:49:50  png3
+  * Revision 2.6  2001-11-14 04:43:55  valetto
+  * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
+  * Also, substantially cleaned up code.
+  *
+  * Revision 2.5  2001/04/18 19:49:50  png3
   * modified synchronization method for worklet arrival.  I thought incorrectly
   * that wait()-ing on an object released _all_ of its locks
   *
@@ -76,12 +80,14 @@ public class SienaTest {
     xml = sb.toString();
     System.err.println("About to parse:\n" + xml+"\n.");
 
-    Notification n = KXNotification.ProbeKXNotification("Biff-Probe", 666, xml);
-/*
+    Notification n = KXNotification.MetaparserInput("SienaTest", 333, 666, null,xml);
+
+    /*
     n.putAttribute("Source", "EventDistiller");
     n.putAttribute("Type", "DataToMetaParser");
     n.putAttribute("SmartEvent", xml);
-*/
+    */
+
     try {
       hd.publish(n);
     } catch (SienaException se) {

@@ -10,7 +10,11 @@ import siena.*;
   * Spawns ParserThreads.
   *
   * $Log$
-  * Revision 2.6  2001-06-02 19:35:33  png3
+  * Revision 2.7  2001-11-14 04:43:55  valetto
+  * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
+  * Also, substantially cleaned up code.
+  *
+  * Revision 2.6  2001/06/02 19:35:33  png3
   * various pre-demo tweaks
   *
   * Revision 2.5  2001/03/14 08:17:13  png3
@@ -167,7 +171,6 @@ class SienaListenerThread implements Runnable {
 
   public void handleOracleNotification(Notification n) {
     String reqID = null;
-    String oracleResp = null;
     final String fn="hON: ";
 
     prDbg(fn+"got Oracle notification" + n);
@@ -176,13 +179,11 @@ class SienaListenerThread implements Runnable {
     // TODO: check for not found
     AttributeValue se = n.getAttribute("MPRequestID");
     reqID = se.stringValue();
-    se = n.getAttribute("Value");
-    oracleResp = se.stringValue();
 
     Object o = Metaparser.waitList.get(reqID);
     // replace hash entry with oracle xml
-    prDbg(fn+"Hash replace: key="+reqID+"; val="+oracleResp);
-    Metaparser.waitList.put(reqID, oracleResp);
+    prDbg(fn+"Hash replace: key="+reqID+"; val="+n.toString());
+    Metaparser.waitList.put(reqID, n);
     prDbg(fn+"notifying...");
     synchronized(o) {
       // wakey, wakey

@@ -1,13 +1,9 @@
 package psl.metaparser;
 
-// import oracle.xml.parser.schema.*;
-// import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 import org.apache.xerces.parsers.*;
 
-// import psl.worklets2.wvm.*;
-// import psl.worklets2.worklets.*;
 import psl.worklets.*;
 import psl.codetransfer.*;
 import psl.kx.*;
@@ -24,7 +20,11 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.12  2001-06-02 19:35:33  png3
+  * Revision 2.13  2001-11-14 04:43:55  valetto
+  * Deals with the new micro Oracle; handles remote schemas and tagproceesors via URLs.
+  * Also, substantially cleaned up code.
+  *
+  * Revision 2.12  2001/06/02 19:35:33  png3
   * various pre-demo tweaks
   *
   * Revision 2.11  2001/04/18 20:12:29  png3
@@ -74,16 +74,12 @@ class ParserThread extends DefaultHandler
   boolean debug = false;
   int depth = 0;
 
-  // Demo temp
-  // WVM wvm = null;
   String moduleName = null;
-
-  // for SmartEventSchema
-  // XMLSchema se = null;
 
   Stack valStack = null;
   Validator currentVal = null;
   boolean spawnParser = false;
+  String currentHint = null;
 
   private final String source = "psl.metaparser.ParserThread";
   String requestID = null;
@@ -122,24 +118,9 @@ class ParserThread extends DefaultHandler
     }
 
     valStack = new Stack();
-    /*
-    String seSchema = Metaparser.getSESchema();
-    if (debug) dbg.println(fn+"reading in schema " + seSchema); // debug
-    try {
-      File f = new File(seSchema);
-      URL seURL = f.toURL();
-      XSDBuilder b = new XSDBuilder();
-      se = (XMLSchema)b.build(seURL);
-    } catch (Exception e) {
-      log.println(fn+"error while building schema");
-      log.println(e);
-      return;
-    }
-    */
-
+   
     Hashtable ht = new Hashtable();
     SAXParser p = new SAXParser();
-    // p.setValidationMode(XMLParser.NONVALIDATING);
     p.setContentHandler(this);
     p.setErrorHandler(this);
     try {
@@ -170,39 +151,14 @@ class ParserThread extends DefaultHandler
       if (moduleName != null) {
 
 	prDbg(fn+"module "+moduleName+" should be coming");  // debug
-	// DemoTemp
-	prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
-	Thread.currentThread().sleep(1000);
-	prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
 
-	/*
-        synchronized (_wklArrivals) {
-	  if (_wklArrivals.containsKey(requestID)) {
-	    prDbg(fn+"worklet had already arrived:"+
-	    	(Date)_wklArrivals.get(requestID));
-	  } else {
-	    // Object lockObj = new Object();
-	    //_wklArrivals.put(requestID, lockObj);
-	    prDbg(fn+"waiting for worklet arrival:" + MPUtil.timestamp());
-	    Date d = null;
-	    while (true) {
-	      _wklArrivals.wait();
-	      d = (Date) _wklArrivals.get(requestID);
-	      if (d != null) break;
-	    }
-	    prDbg(fn+"worklet arrived:" + d);
-	  }
-	}
-	*/
-	
 	try {
 	// Let Simin work his magic
-	  URL[] jarPath = new URL[]{new URL("file://"+moduleName)};
-	  URLClassLoader loader = new URLClassLoader(jarPath);
+	  URL[] jarPath = new URL[]{new URL(moduleName)};
+	  URLClassLoader loader = new URLClassLoader(jarPath); // this can remote tagprocessor modules
 	  Class cls = Class.forName
 	      ("psl.tagprocessor.TagProcessorImpl", true, loader);
-	  
-	  // System.out.println("Working with " + xmlDoc);
+	      
 	  XMLReader reader = XMLReaderFactory.createXMLReader
 	  ("org.apache.xerces.parsers.SAXParser");
 	  try {
@@ -217,9 +173,14 @@ class ParserThread extends DefaultHandler
 	    return;
 	  }
 	  TagProcessor tp = (TagProcessor) cls.newInstance();
-	  //tp.setJarPath("file:");
-	  //tp.setResource(jarPath[0].getPath());
-	  tp.setResource(moduleName);
+
+	  /* PEPPO: this requires that a .jar is downloaded locally 
+	     and accessed via filename
+	  */
+	  //tp.setResource(moduleName);
+	  
+	  /* PEPPO new - attempts to use remote .jar via its URL */
+	  tp.setResource(new URL(moduleName));
 	  tp.init(ht);
 	  reader.setContentHandler(tp.getContentHandler());
 	  dbg.println(fn+"TagProcessor about to parse");
@@ -251,10 +212,6 @@ class ParserThread extends DefaultHandler
       e.printStackTrace();
       return;
     }
-    prDbg(fn+"shutting down wvm");
-    // don't shutdown if Demo temp
-    // wvm.shutdown();
-
     if (debug) dbg.println(fn+"Done parsing");
   }
 
@@ -285,7 +242,7 @@ class ParserThread extends DefaultHandler
             throws SAXException {
 
     final String fn = "PT_startElement: ";
-    String oracleResp = null;
+    Notification oracleResp = null;
 
     prDbg(fn+MPUtil.printLoc(loc) + ":" + qName);
     for (int i = 0; i < atts.getLength(); i++) {
@@ -302,12 +259,6 @@ class ParserThread extends DefaultHandler
       // retrieve subparser
       requestID = String.valueOf(System.currentTimeMillis());
 
-      // Demo temp
-      // prDbg(fn+"creating new WVM("+slt.hostname+","+requestID+")");
-      System.out.println("WVM created");
-      // Demo temp
-      // wvm = new WVM(this, slt.hostname, requestID);
-
       Notification n = new Notification();
       n.putAttribute("Hostname", slt.hostname);
       n.putAttribute("Source", source);
@@ -316,14 +267,11 @@ class ParserThread extends DefaultHandler
       // changed to MPQuery for Oracle compatibility
       n.putAttribute("Type", "MPQuery");
       n.putAttribute("MPQuery", MPUtil.makeQuery(qName));
+      // PEPPO: added to send pre-selected hint to Oracle about what tag processor to use
+      if (currentHint != null)
+      	n.putAttribute("useHint", currentHint);
       prDbg(fn+"sending request to Oracle:" + n);
-      try {
-	// DemoTemp
-	prDbg(fn+"going to sleep: " + MPUtil.timestamp());
-	Thread.currentThread().sleep(1000);
-	prDbg(fn+"awake again: " + MPUtil.timestamp());
-	moduleName="tagprocessor.jar";
-      /*
+      try {      
 	slt.publish(n);
 	Object lockObj = new Object();
 	Metaparser.waitList.put(requestID, lockObj);
@@ -332,23 +280,22 @@ class ParserThread extends DefaultHandler
 	  lockObj.wait();
 	}
 	prDbg(fn+"awake again: " + MPUtil.timestamp());
-	// hash entry now has the XML string
-	oracleResp = (String)Metaparser.waitList.get(requestID);
-	prDbg(fn+"retrieved OResp of:"+oracleResp);
-	// XMLSchema subSchema = MPUtil.extractSchema(oracleResp);
-	MPUtil.extractSchema(oracleResp);
-	moduleName = MPUtil.extractModuleName(oracleResp);
-	*/
+	// hash entry now has the Event returned by the Oracle
+	oracleResp = (Notification)Metaparser.waitList.get(requestID);
+	prDbg(fn+"retrieved OResp of:"+oracleResp.toString());
+	String schemaURL = MPUtil.extractSchemaURLFromEvent(oracleResp);
+	moduleName = MPUtil.extractModuleNameFromEvent(oracleResp);
       
 	// we have a new schema.  parse it out, suck it in...
 	currentVal = new Validator(xml, new PipedWriter(),
 	  "SubValid" + instNr, debug, loc);
 	currentVal.send("<?xml version='1.0' encoding='UTF-8'?>");
-	// mega-hack -- defies description
-	// extracted XML is sitting in file schema.xsd
+	/* PEPPO: uses the URL of the schema to specify to the validator
+	   the schema into the fabricated xml header	
+	*/
 	currentVal.send("<"+qName+
 		" xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'" +
-  		" xsi:noNamespaceSchemaLocation='schema.xsd'>");
+  		" xsi:noNamespaceSchemaLocation='" + schemaURL +"'>");
       } catch (Exception e) {
 	prLog(fn+"Exception with Oracle communication: " + e);
 	e.printStackTrace();
@@ -359,6 +306,7 @@ class ParserThread extends DefaultHandler
       currentVal.setDepth(depth);
       currentVal.setElement(qName);
       spawnParser = false;
+      currentHint = null;
     }
 
     // finally, spit out this tag
@@ -422,6 +370,7 @@ class ParserThread extends DefaultHandler
 
   public void processingInstruction(String target, String data)
           throws SAXException {
+    
     final String fn = "PT PI: ";
     prDbg(fn+"ProcessingInstruction:" + target + " " + data);
     if (target.toLowerCase().equals("flexml")) {
@@ -448,6 +397,13 @@ class ParserThread extends DefaultHandler
 	      --depth;
 	    }
 	  }
+	  else if (piaName.toLowerCase().equals("microhint")){
+	  	currentHint = piaVal.toLowerCase();
+	  	++depth;
+	    prDbg(fn+"*** found Oracle hint: " + currentHint + " ***");
+	    --depth;	
+	}
+	
 	}
       }
       depth -= 2;
