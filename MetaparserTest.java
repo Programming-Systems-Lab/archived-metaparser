@@ -95,7 +95,7 @@ public class MetaparserTest implements Runnable {
     
     public static void main ( String[] args ) {
 	if ( args.length < 1 ) {
-	    System.out.println ( "Usage: java SAXParserDemo [XML URL]" );
+	    System.out.println ( "Usage: java psl.metaparser.MetaparserTest [XML URL]" );
 	    System.exit ( 0 );
 	}
 	String uri = args[0];

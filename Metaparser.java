@@ -4,6 +4,7 @@ import psl.util.*;
 
 import psl.oracle.*;
 import psl.oracle.impl.*;
+import psl.oracle.impl.SchemaFragment;
 
 import psl.groupspace.*;
 import psl.groupspace.impl.*;
@@ -16,7 +17,7 @@ import java.util.Hashtable;
 
 import java.io.StringReader;
 
-import psl.oracle.impl.SchemaFragment;
+
 
 /** 
  * Metaparser provides a metaparser to parse smart events written
@@ -46,6 +47,10 @@ public class Metaparser {
     // the Metaparser to function properly.
     private OracleService os;
     
+    // This is an instance of a local Oracle that will reply to queries
+    // from all SingleParser instances.
+    private IOracle oracle;
+
     // A list of all instances of SingleParser contained within this
     // Metaparser.
     private Hashtable parserList;
@@ -73,9 +78,10 @@ public class Metaparser {
 	ms = new MetaparserService ( this );
 	this.gc.addService ( ms );
 	
-	os = new OracleService ();
-	this.gc.addService ( os );
+	//	os = new OracleService ();
+	//	this.gc.addService ( os );
 	
+	oracle = new Oracle ();
 	parserList = new Hashtable ();
 	
 	builder = new SAXBuilder ();
@@ -88,7 +94,9 @@ public class Metaparser {
      * @param newQuery Content of new query.
      */
     public void queryTag ( String newQuery ) {
+	System.err.println ( "Sending query" );
 	ms.setNewOracleQuery ( newQuery );
+	System.err.println ( "Sent" );
 	return;
     }
     
@@ -180,6 +188,10 @@ public class Metaparser {
      */
     synchronized void killSingleParser ( long srcID ) {
 	parserList.remove ( new Long ( srcID ) );
+    }
+    
+    IOracle getOracle () {
+	return this.oracle;
     }
     
 }

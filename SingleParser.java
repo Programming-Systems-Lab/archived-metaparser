@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.util.Vector;
 import java.util.Stack;
 import java.util.Enumeration;
+import java.util.Hashtable;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -36,7 +37,11 @@ import org.jdom.ProcessingInstruction;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
 
+import psl.oracle.impl.IOracle;
 import psl.oracle.impl.SchemaFragment;
+
+import psl.wgcache.impl.Cacheable;
+import psl.wgcache.impl.PersonalCacheModuleImpl;
 
 /**
  * This class makes the propertis of FleXML possible.<br/>
@@ -62,6 +67,9 @@ class SingleParser implements ContentHandler, Runnable {
     public static final String DEFAULT_PARSER_NAME =
         "org.apache.xerces.parsers.SAXParser";
     
+    private static final String DEFAULT_CACHE_SERVICE_ROLE_NAME =
+	"psl.metaparser.MetaparserCacheServiceRole";
+
     private long srcID;
     private StringBuffer allContents;
     private Stack stack;
@@ -90,10 +98,21 @@ class SingleParser implements ContentHandler, Runnable {
     private boolean isWaitingForReply;
     private String waitingTag;
     private SchemaFragment currentReply;
+
+    private PersonalCacheModuleImpl cache;
     
+    private Hashtable modulePool;
+    
+    private IOracle oracle;
+
     public SingleParser ( long srcID, Metaparser mp ) {
 	this.srcID = srcID;
-	this.allContents = new StringBuffer ();
+	this.mp = mp;
+	reset ();
+    }
+    
+    private void reset () {
+        this.allContents = new StringBuffer ();
 	this.stack = new Stack ();
 	this.index = 0;
 	
@@ -119,6 +138,13 @@ class SingleParser implements ContentHandler, Runnable {
 	isWaitingForReply = false;
 	waitingTag = null;
 	currentReply = null;
+	
+	cache = 
+	    new PersonalCacheModuleImpl ( DEFAULT_CACHE_SERVICE_ROLE_NAME );
+	
+	modulePool = new Hashtable ();
+	
+	oracle = mp.getOracle ();
 	
         try {
             parser = XMLReaderFactory.createXMLReader ( DEFAULT_PARSER_NAME );
@@ -271,43 +297,67 @@ class SingleParser implements ContentHandler, Runnable {
 	isWaitingForReply = false;
     }
     
-    public void startElement ( String namespaceURI, 
-			       String localName, 
-			       String rawName, 
-			       Attributes atts )
+    private void queryTag ( String namespaceURI, String localName )
 	throws SAXException {
 
-	path += ( "\\" + localName );
-	
 	// The following will be replaced by a String
+	//
 	// SchemaFragment newQuery = new SchemaFragment ();
 	// newQuery.setSrcID ( this.srcID );
 	// if ( !namespaceURI.equals ( "" ) ) 
 	//     newQuery.setNameSpace ( namespaceURI );
 	// newQuery.setName ( localName );
 	// newQuery.setPath ( path );
-
+	
+	// Start querying schema information of current tag
+	String newKey = new String ( namespaceURI + localName );
+	try {
+	    Cacheable existingTag = cache.query ( newKey );
+	    currentReply = ( SchemaFragment )existingTag.data;
+	    return;
+	} catch ( java.lang.ClassCastException cce ) {
+	    System.err.println ( "Unknown error occurred due to class " +
+				 "cast exception." );
+	    currentReply = null;
+	    return;
+	} catch ( psl.wgcache.exception.WGCException wgce ) {
+	    // No results from cache, so query Oracle instead
+	} catch ( java.lang.NullPointerException npe ) {
+	    System.err.println ( "Cache returns null" );
+	}
+	
 	String newQuery = ( srcID + "," );
 	if ( !namespaceURI.equals ( "" ) )
 	    newQuery += ( namespaceURI + ":" );
 	newQuery += ( localName + "," );
 	newQuery += path;
-
+	
 	isWaitingForReply = true;
 	waitingTag = localName;
-        mp.queryTag ( newQuery );	
 
-	while ( isWaitingForReply ) {
-	    try {
-		Thread.sleep ( 10 );
-	    } catch ( java.lang.InterruptedException ie ) {
-		System.err.println ( "Interrupted" );
-	    }
+	//	mp.queryTag ( newQuery );	
+	//	
+	//	while ( isWaitingForReply ) {
+	//	    try {
+	//		Thread.sleep ( 10 );
+	//	    } catch ( java.lang.InterruptedException ie ) {
+	//		System.err.println ( "Interrupted" );
+	//	    }
+	//	}
+	
+	try {
+	    currentReply = oracle.getFragment ( newQuery );
+	} catch ( psl.oracle.exceptions.UnknownTagException ute ) {
+	    System.err.println ( "Tag Unknown." );
+	} catch ( psl.oracle.exceptions.InvalidQueryFormatException iqfe ) {
+	    System.err.println ( "Invalid Query Format Exception." );
+	} catch ( psl.oracle.exceptions.InvalidSchemaFormatException isfe ) {
+	    System.err.println ( "Invalid Schema Format Exception." );
 	}
 	
 	if ( null == currentReply ||
 	     !waitingTag.equals ( currentReply.getName () ) ) {
-	    System.err.println ( "Reply doesn't match query" );
+	    // System.err.println ( "Reply doesn't match query" );
 	    if ( null == currentReply )
 		System.err.println ( "Null reply" );
 	    else {
@@ -315,16 +365,110 @@ class SingleParser implements ContentHandler, Runnable {
 		System.err.println ( "Current Reply: " + 
 				     currentReply.getName () );
 	    }
-	    throw new SAXException ( "Reply doesn't match query" );
+	    // throw new SAXException ( "Reply doesn't match query" );
 	} else {
-	    System.err.println 
+	    waitingTag = null;
+	    Cacheable newData = 
+		new Cacheable ( currentReply, newKey, 
+				currentReply.toString ().length () );
+	    cache.put ( newData );
+	}
+	
+	// End of query, information should be stored in currentReply now.
+    }
+    
+    private IMetaparserModule getModule ( SchemaFragment currentTag ) {
+	if ( currentTag == null ) return null;
+	
+        String moduleName = currentTag.getModuleName ();
+        boolean isSingleton = currentTag.getIsSingleton ();
+        IMetaparserModule currentModule = null;
+        if ( isSingleton ) {
+            currentModule = ( IMetaparserModule )modulePool.get ( moduleName );
+            if ( null == currentModule ) {
+                try {
+                    currentModule = 
+			( IMetaparserModule )Class.forName ( moduleName )
+			.newInstance ();
+                    modulePool.put ( moduleName, currentModule );
+                } catch ( java.lang.ClassNotFoundException cnfe ) {
+                    System.err.println ( "Cannot initialize module: " +
+                                         moduleName );
+		    return null;
+                } catch ( java.lang.InstantiationException ie ) {
+                    System.err.println ( "Cannot initialize module: " +
+                                         moduleName );
+                    return null;
+		} catch ( java.lang.IllegalAccessException iae ) {
+                    System.err.println ( "Cannot initialize module: " +
+                                         moduleName );
+                    return null;
+		}		    
+            }
+        } else {
+            try {
+                currentModule = 
+		    ( IMetaparserModule )Class.forName ( moduleName )
+		    .newInstance ();
+            } catch ( java.lang.ClassNotFoundException cnfe ) {
+                System.err.println ( "Cannot initialize module: " +
+                                     moduleName );
+		return null;
+            } catch ( java.lang.InstantiationException ie ) {
+		System.err.println ( "Cannot initialize module: " +
+				     moduleName );
+		return null;
+	    } catch ( java.lang.IllegalAccessException iae ) {
+		System.err.println ( "Cannot initialize module: " +
+				     moduleName );
+		return null;
+	    }
+        }	
+	return currentModule;
+    }
+    
+    public void startElement ( String namespaceURI,
+			       String localName,
+			       String rawName,
+			       Attributes atts )
+	throws SAXException {
+
+        path += ( "\\" + localName );
+	
+	queryTag ( namespaceURI, localName );
+
+	/*
+	if ( null == currentReply ) 
+	    throw ( new SAXException ( "Proper schema fragment not found: " +
+				       namespaceURI + "/" + localName ) );
+	*/
+	
+	
+	if ( currentReply != null ) {
+	    // Start validating with the schema fragment 
+	    // contained in currentReply
+	    System.err.println
 		( "\nParsing with the following Schema Fragment:" );
 	    System.err.println ( currentReply.toString () + "\n" );
 	    System.err.println ( "***********************************\n" );
-	    waitingTag = null;
-	    currentReply = null;
+	    // End of validation
+	} else {
+	    System.err.println ( "Proper schema fragment not found: " +
+				 namespaceURI + "/" + localName );
 	}
+    
+	// Start calling the correct Module
+	IMetaparserModule currentModule = getModule ( currentReply );
+	if ( currentModule != null ) {
+	    currentModule.tagOpening ( namespaceURI, localName, 
+				       rawName, atts );
+	    if ( !currentModule.isSingleton () )
+		currentModule.destroy ();
+	}
+	// End of module call
+		
 	
+	// Start parsing
 	String temp = "";
 	String tempNode = "";
 	System.err.println ( "startElement: " + localName );
@@ -403,6 +547,9 @@ class SingleParser implements ContentHandler, Runnable {
 	    currentNode.add ( child );
 	    currentNode = child;
 	}
+	// End of parsing
+	
+	currentReply = null; // Reset currentReply for next tag
     }
     
     public void endElement ( String namespaceURI, 
@@ -411,8 +558,18 @@ class SingleParser implements ContentHandler, Runnable {
 	throws SAXException {
 	
 	
-	//System.err.println ( "endElement: " + localName + "\n" );
+	System.err.println ( "endElement: " + localName + "\n" );
 	path = path.substring ( 0, path.length () - localName.length () - 1 );
+
+        queryTag ( namespaceURI, localName );
+
+	/*
+        if ( null == currentReply )
+            throw ( new SAXException ( "Proper schema fragment not found: " +
+                                       namespaceURI + "\\" + localName ) );
+	*/
+	
+
 	String temp = "";
 	if ( pw != null ) {
 	    level --;
@@ -424,6 +581,7 @@ class SingleParser implements ContentHandler, Runnable {
 	    pw.print ( temp );
 	allContents.append ( temp );
 	index += temp.length ();
+
 	MetaparserTag currentTag = ( MetaparserTag )stack.pop ();
 	try {
 	    current.getAttribute ( "parsingStatus" ).setValue ( "parsed" );
@@ -437,11 +595,36 @@ class SingleParser implements ContentHandler, Runnable {
 	    System.err.println 
 		( "Parsing:\n" + chunk );
 	    try {
+		// validating current chunk
 		if ( validate ( chunk ) ) {
 		    current.removeAttribute ( "parsingStatus" );
+
+		    // Start calling the correct Module
+		    IMetaparserModule currentModule = 
+			getModule ( currentReply );
+		    if ( currentModule != null ) {
+			currentModule.tagClosing ( namespaceURI, localName,
+						   rawName, true, current );
+			if ( !currentModule.isSingleton () )
+			    currentModule.destroy ();
+		    }
+		    // End of module call		    
+
 		} else {
 		    current.getAttribute ( "parsingStatus" )
 			.setValue ( "INVALID" );
+
+		    // Start calling the correct Module
+		    IMetaparserModule currentModule = 
+			getModule ( currentReply );
+		    if ( currentModule != null ) {
+			currentModule.tagClosing ( namespaceURI, localName,
+						   rawName, false, current );
+			if ( !currentModule.isSingleton () )
+			    currentModule.destroy ();
+		    }
+		    // End of module call
+
 		}
 	    } catch ( org.jdom.NoSuchAttributeException nsae ) {
 	    }
@@ -479,6 +662,8 @@ class SingleParser implements ContentHandler, Runnable {
 		currentNode = null;
 	    }
 	}
+	
+	currentReply = null; // Reset currentReply for next tag
     }
     
     public void characters ( char[] ch, int start, int end )
