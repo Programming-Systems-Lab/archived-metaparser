@@ -1,3 +1,5 @@
+package psl.metaparser;
+
 import oracle.xml.parser.schema.*;
 import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
@@ -17,7 +19,10 @@ import java.util.*;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.2  2001-01-29 03:55:34  png3
+  * Revision 2.3  2001-01-29 04:04:48  png3
+  * Added package psl.metaparser statements.  Can you say "Oops?"
+  *
+  * Revision 2.2  2001/01/29 03:55:34  png3
   * zapping Def.java.  Replaced by the superior Simin tagprocessor stuff
   *
   * Revision 2.1  2001/01/28 17:52:17  png3
@@ -129,10 +134,10 @@ class ParserThread extends DefaultHandler
 	    prDbg(fn+"worklet arrived:" + MPUtil.timestamp());
 	  }
 	}
-	prDbg(fn+"casting to Def");
-        Def d = (Def) Class.forName(moduleName).newInstance();
-	System.out.println("Here it comes...");
-	d.dummy();
+	// prDbg(fn+"casting to Def");
+        // Def d = (Def) Class.forName(moduleName).newInstance();
+	// System.out.println("Here it comes...");
+	// d.dummy();
       }
 
     } catch (Exception e) {

@@ -1,12 +1,16 @@
+package psl.metaparser;
+
 import java.io.*;
 import org.xml.sax.*;
 import oracle.xml.parser.schema.*;
 
-
 /** Input controller.  Selectively feeds data to a SubParser.
   *
   * $Log$
-  * Revision 2.1  2001-01-28 17:52:17  png3
+  * Revision 2.2  2001-01-29 04:04:48  png3
+  * Added package psl.metaparser statements.  Can you say "Oops?"
+  *
+  * Revision 2.1  2001/01/28 17:52:17  png3
   * New version of Metaparser: fully multithreaded.  PrintWriter logs.
   *
   */

@@ -1,3 +1,5 @@
+package psl.metaparser;
+
 import oracle.xml.parser.schema.*;
 import oracle.xml.parser.v2.*;
 import org.xml.sax.*;
@@ -9,7 +11,10 @@ import java.util.*;
 /** Validating subordinate parser thread.
   *
   * $Log$
-  * Revision 2.2  2001-01-28 17:52:17  png3
+  * Revision 2.3  2001-01-29 04:04:48  png3
+  * Added package psl.metaparser statements.  Can you say "Oops?"
+  *
+  * Revision 2.2  2001/01/28 17:52:17  png3
   * New version of Metaparser: fully multithreaded.  PrintWriter logs.
   *
   */

@@ -1,3 +1,5 @@
+package psl.metaparser;
+
 import java.util.*;
 import java.io.*;
 import java.net.*;
@@ -29,7 +31,10 @@ import siena.SienaException;
  *  FleXML PI.  Requires actual streaming validation.
  *
  *  $Log$
- *  Revision 2.2  2001-01-28 17:52:17  png3
+ *  Revision 2.3  2001-01-29 04:04:48  png3
+ *  Added package psl.metaparser statements.  Can you say "Oops?"
+ *
+ *  Revision 2.2  2001/01/28 17:52:17  png3
  *  New version of Metaparser: fully multithreaded.  PrintWriter logs.
  *
  *
