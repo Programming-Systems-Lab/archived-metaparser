@@ -23,7 +23,10 @@ import psl.tagprocessor.TagProcessor;
   * Spawns Validators/SubParsers to validate subcomponents.
   *
   * $Log$
-  * Revision 2.6  2001-03-12 08:07:39  png3
+  * Revision 2.7  2001-03-14 08:17:13  png3
+  * various changes towards working demo
+  *
+  * Revision 2.6  2001/03/12 08:07:39  png3
   * now links with worklets.*
   *
   * Revision 2.5  2001/02/05 06:35:16  png3
@@ -275,12 +278,13 @@ class ParserThread extends DefaultHandler
       wvm = new WVM(this, slt.hostname, requestID);
 
       Notification n = new Notification();
-      n.putAttribute("hostname", slt.hostname);
-      n.putAttribute("source", source);
-      n.putAttribute("SrcID", slt.SRC_ID);
+      n.putAttribute("Hostname", slt.hostname);
+      n.putAttribute("Source", source);
+      n.putAttribute("SourceID", slt.SRC_ID);
       n.putAttribute("RequestID", requestID);
-      n.putAttribute("type", "query");
-      n.putAttribute("query", MPUtil.makeQuery(qName));
+      // changed to MPQuery for Oracle compatibility
+      n.putAttribute("Type", "MPQuery");
+      n.putAttribute("MPQuery", MPUtil.makeQuery(qName));
       prDbg(fn+"sending request to Oracle:" + n);
       try {
       /*

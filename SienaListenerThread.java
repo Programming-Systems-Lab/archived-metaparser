@@ -10,7 +10,10 @@ import siena.*;
   * Spawns ParserThreads.
   *
   * $Log$
-  * Revision 2.4  2001-02-05 06:35:16  png3
+  * Revision 2.5  2001-03-14 08:17:13  png3
+  * various changes towards working demo
+  *
+  * Revision 2.4  2001/02/05 06:35:16  png3
   * Post California version
   *
   * Revision 2.3  2001/01/30 10:16:55  png3
@@ -120,11 +123,11 @@ class SienaListenerThread implements Runnable {
 
     // #2: from Oracle
     Filter f2 = new Filter();
-    f2.addConstraint("source", "psl.oracle.impl.OracleSienaInterface");
-    f2.addConstraint("type", "queryResult");
+    f2.addConstraint("Source", "psl.oracle.OracleSienaInterface");
+    f2.addConstraint("Type", "OracleQueryResult");
     // TODO: when Oracle sends it, subscribe to it...
     f2.addConstraint("MPHostname", hostname);
-    f2.addConstraint("MPSrcID", SRC_ID);
+    f2.addConstraint("MPSourceID", SRC_ID);
     // debug
     if (dbg != null) dbg.println(fn + " adding Oracle filter " + f2);
     try {
@@ -168,7 +171,7 @@ class SienaListenerThread implements Runnable {
     // TODO: check for not found
     AttributeValue se = n.getAttribute("MPRequestID");
     reqID = se.stringValue();
-    se = n.getAttribute("value");
+    se = n.getAttribute("Value");
     oracleResp = se.stringValue();
 
     Object o = Metaparser.waitList.get(reqID);
